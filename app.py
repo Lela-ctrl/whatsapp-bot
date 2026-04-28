@@ -7,18 +7,22 @@ VERIFY_TOKEN = "michela123"
 
 @app.route('/', methods=['GET'])
 def verify():
+    hub_mode = request.args.get("hub.mode")
     token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")
-    
-    if token == VERIFY_TOKEN:
-        return challenge
-    return "Errore"
+
+    if hub_mode == "subscribe" and token == VERIFY_TOKEN:
+        return challenge, 200
+
+    return "Forbidden", 403
+
 
 @app.route('/', methods=['POST'])
 def webhook():
     data = request.json
     print(data)
     return "ok"
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
