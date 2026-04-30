@@ -12,7 +12,7 @@ def verify():
     challenge = request.args.get("hub.challenge")
 
     if hub_mode == "subscribe" and token == VERIFY_TOKEN:
-        return challenge, 200
+        return str(challenge)
 
     return "Forbidden", 403
 
