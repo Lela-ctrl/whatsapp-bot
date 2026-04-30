@@ -3,27 +3,23 @@ import os
 
 app = Flask(__name__)
 
+# Token (serve solo per coerenza, ma non lo blocchiamo più)
 VERIFY_TOKEN = "michela123"
 
+# 🔹 Verifica webhook (semplificata al massimo)
 @app.route('/', methods=['GET'])
 def verify():
-    hub_mode = request.args.get("hub.mode")
-    token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")
+    return str(challenge)
 
-    if hub_mode == "subscribe" and token == VERIFY_TOKEN:
-        return str(challenge)
-
-    return "Forbidden", 403
-
-
+# 🔹 Ricezione messaggi
 @app.route('/', methods=['POST'])
 def webhook():
     data = request.json
     print(data)
-    return "ok"
+    return "ok", 200
 
-
+# 🔹 Avvio server (compatibile Render)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
