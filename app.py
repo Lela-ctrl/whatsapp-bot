@@ -5,7 +5,6 @@ app = Flask(__name__)
 
 VERIFY_TOKEN = "michela123"
 
-# 🔹 VERIFICA WEBHOOK (Meta WhatsApp)
 @app.route('/', methods=['GET'])
 def verify():
     hub_mode = request.args.get("hub.mode")
@@ -18,21 +17,13 @@ def verify():
     return "Forbidden", 403
 
 
-# 🔹 RICEZIONE MESSAGGI
 @app.route('/', methods=['POST'])
 def webhook():
     data = request.get_json()
-    print("EVENTO RICEVUTO:", data)
+    print("EVENTO:", data)
     return "OK", 200
 
 
-# 🔹 AVVIO SERVER (Render compatibile)
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
-
-
-# 🔹 Render
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
