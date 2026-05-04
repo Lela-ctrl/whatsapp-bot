@@ -1,7 +1,2 @@
 Flask
 gunicorn
-
-
-
-
-add requirements
