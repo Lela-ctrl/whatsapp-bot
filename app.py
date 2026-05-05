@@ -111,15 +111,15 @@ Indirizzo: {sessions[user]['indirizzo']}
     except Exception as e:
         print("Errore:", e)
 
-    return "OK", 200
-    
+     return "OK", 200
+
+# 👇 FALLBACK SEMPRE ALLA FINE
 else:
-    if "aiuto" in text:
     send_message(user,
-        "🆘 Hai bisogno di aiuto?\n"
-        "Chiama: +39 XXX XXX XXXX"
+        "🆘 Non ho capito.\nScrivi 'ordine' o 'catalogo'"
     )
-    
+    return "OK", 200
+
 def send_message(to, text):
     url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
 
