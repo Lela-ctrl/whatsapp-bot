@@ -113,13 +113,6 @@ Indirizzo: {sessions[user]['indirizzo']}
 
      return "OK", 200
 
-# 👇 FALLBACK SEMPRE ALLA FINE
-if else:
-    send_message(user,
-        "🆘 Non ho capito.\nScrivi 'ordine' o 'catalogo'"
-    )
-    return "OK", 200
-
 def send_message(to, text):
     url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
 
