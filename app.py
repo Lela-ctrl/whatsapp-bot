@@ -30,7 +30,13 @@ def webhook():
     print("📩 DATA:", data)
 
     try:
-        message = data["entry"][0]["changes"][0]["value"]["messages"][0]
+        value = data["entry"][0]["changes"][0]["value"]
+
+        if "messages" not in value:
+            print("ℹ️ Evento non messaggio (status/update) ignorato")
+            return "OK", 200
+
+        message = value["messages"][0]
 
         from_number = message["from"]
         text = message.get("text", {}).get("body", "")
@@ -43,27 +49,3 @@ def webhook():
         print("⚠️ Errore parsing:", e)
 
     return "OK", 200
-
-
-def send_message(to, text):
-    url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
-
-    headers = {
-        "Authorization": f"Bearer {ACCESS_TOKEN}",
-        "Content-Type": "application/json"
-    }
-
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": to,
-        "type": "text",
-        "text": {"body": text}
-    }
-
-    response = requests.post(url, headers=headers, json=payload)
-    print("📤 WhatsApp response:", response.text)
-
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
