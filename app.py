@@ -112,6 +112,8 @@ Indirizzo: {sessions[user]['indirizzo']}
         print("Errore:", e)
 
     return "OK", 200
+    
+else:
     if "aiuto" in text:
     send_message(user,
         "🆘 Hai bisogno di aiuto?\n"
