@@ -112,6 +112,11 @@ Indirizzo: {sessions[user]['indirizzo']}
         print("Errore:", e)
 
     return "OK", 200
+    if "aiuto" in text:
+    send_message(user,
+        "🆘 Hai bisogno di aiuto?\n"
+        "Chiama: +39 XXX XXX XXXX"
+    )
     
 def send_message(to, text):
     url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
