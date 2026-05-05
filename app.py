@@ -4,11 +4,9 @@ import os
 
 app = Flask(__name__)
 
-VERIFY_TOKEN = "michela123"
-
-ACCESS_TOKEN = "EAATJWLbzvgABRYP2E96UU8BuUhrBecKOejoxCFE5ldS2zAUZAc2ZCXMAAbwbaJWYbGCeZAjTLi8ufy9fTvwGZCDvMZAIbhnEoF1fKLCn8MojbNKSIjh1Ci16SbdlrSjAZBLJsnVAa2ZARUlmBqibxwmH9fIi9iQhaDUjrtk2IWHFHaA3kB2mnmXMBnrovmxlPZCoU47kgydlnHbLpPalEMTMX2zuBsJvNP6EhAe5323Ibqt35O6d6lSZBI4LwJ6NtVXH5oZBj77d5iLw6Y0aePaqY7uBMZA"
-PHONE_NUMBER_ID = "1080578401810270"
-
+VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")
+ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
+PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
 
 
 @app.route("/webhook", methods=["GET"])
@@ -22,21 +20,22 @@ def verify():
         return hub_challenge, 200
 
     return "Forbidden", 403
-    
+
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    print("🔥 POST ARRIVATO 🔥")
+    print("🔥 POST ARRIVATO")
 
     data = request.get_json()
-    print("📩 EVENTO RICEVUTO:")
-    print(data)
+    print("📩 DATA:", data)
 
     try:
         message = data["entry"][0]["changes"][0]["value"]["messages"][0]
-        from_number = message["from"]
-        text = message["text"]["body"]
 
-        print(f"📱 Messaggio da {from_number}: {text}")
+        from_number = message["from"]
+        text = message.get("text", {}).get("body", "")
+
+        print(f"📱 Da {from_number}: {text}")
 
         send_message(from_number, f"Hai scritto: {text}")
 
@@ -62,7 +61,7 @@ def send_message(to, text):
     }
 
     response = requests.post(url, headers=headers, json=payload)
-    print("📤 Risposta inviata:", response.text)
+    print("📤 WhatsApp response:", response.text)
 
 
 if __name__ == "__main__":
