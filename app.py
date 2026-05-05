@@ -20,10 +20,8 @@ def verify():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.get_json()
-    print(data)
+    print("🔥 MI È ARRIVATA UNA RICHIESTA POST")
     return "OK", 200
-
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
