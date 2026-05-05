@@ -24,29 +24,92 @@ def verify():
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    print("🔥 POST ARRIVATO")
-
     data = request.get_json()
-    print("📩 DATA:", data)
 
     try:
         value = data["entry"][0]["changes"][0]["value"]
 
         if "messages" not in value:
-            print("ℹ️ Evento non messaggio (status/update) ignorato")
             return "OK", 200
 
         message = value["messages"][0]
+        user = message["from"]
+        text = message.get("text", {}).get("body", "").lower()
 
-        from_number = message["from"]
-        text = message.get("text", {}).get("body", "")
+        if user not in sessions:
+            sessions[user] = {"step": "start"}
 
-        print(f"📱 Da {from_number}: {text}")
+        step = sessions[user]["step"]
 
-        send_message(from_number, f"Hai scritto: {text}")
+        # 👋 START
+        if step == "start":
+            send_message(user,
+                "👋 Benvenuto in Cortonese Carni Srl!\n\n"
+                "Sai già cosa prendere o vuoi vedere il nostro catalogo?\n\n"
+                "📦 Scrivi: catalogo\n"
+                "🧾 Scrivi: ordine"
+            )
+            sessions[user]["step"] = "menu"
+            return "OK", 200
+
+        # 📦 CATALOGO
+        if text == "catalogo":
+            send_message(user,
+                "📦 *CATALOGO PRODOTTI*\n\n"
+                "(in arrivo versione completa)\n\n"
+                "Se vuoi ordinare scrivi: ordine"
+            )
+            return "OK", 200
+
+        # 🧾 ORDINE STEP 1
+        if text == "ordine":
+            send_message(user, "Perfetto 👍\nScrivi Nome e Cognome:")
+            sessions[user]["step"] = "nome"
+            return "OK", 200
+
+        if step == "nome":
+            sessions[user]["nome"] = text
+            send_message(user, "Sei un privato o azienda? (scrivi azienda o privato)")
+            sessions[user]["step"] = "tipo"
+            return "OK", 200
+
+        if step == "tipo":
+            sessions[user]["tipo"] = text
+            send_message(user, "Scrivi ordine (prodotti + quantità):")
+            sessions[user]["step"] = "ordine"
+            return "OK", 200
+
+        if step == "ordine":
+            sessions[user]["ordine"] = text
+            send_message(user, "Scrivi indirizzo di consegna:")
+            sessions[user]["step"] = "indirizzo"
+            return "OK", 200
+
+        if step == "indirizzo":
+            sessions[user]["indirizzo"] = text
+
+            # 📩 CREA ORDINE
+            ordine_finale = f"""
+🧾 NUOVO ORDINE
+
+Nome: {sessions[user]['nome']}
+Tipo: {sessions[user]['tipo']}
+Ordine: {sessions[user]['ordine']}
+Indirizzo: {sessions[user]['indirizzo']}
+"""
+
+            send_email(ordine_finale)
+
+            send_message(user,
+                "✅ Ordine ricevuto con successo!\n"
+                "Un nostro operatore ti contatterà a breve."
+            )
+
+            sessions[user] = {"step": "start"}
+            return "OK", 200
 
     except Exception as e:
-        print("⚠️ Errore parsing:", e)
+        print("Errore:", e)
 
     return "OK", 200
     
