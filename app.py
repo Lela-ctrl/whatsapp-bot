@@ -114,7 +114,7 @@ Indirizzo: {sessions[user]['indirizzo']}
      return "OK", 200
 
 # 👇 FALLBACK SEMPRE ALLA FINE
-else:
+if else:
     send_message(user,
         "🆘 Non ho capito.\nScrivi 'ordine' o 'catalogo'"
     )
