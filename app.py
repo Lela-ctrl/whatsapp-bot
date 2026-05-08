@@ -178,19 +178,23 @@ Indirizzo: {sessions[user]['indirizzo']}
 Telefono: {user}
 """
 
-            print(ordine_finale)
+            print("📦 ORDINE COMPLETO")
+print(ordine_finale)
 
-            Thread(target=send_email, args=(ordine_finale,)).start()
+# 🚀 AVVIO EMAIL IN BACKGROUND (QUI VA IL FIX)
+print("🚀 AVVIO THREAD EMAIL")
 
-            send_message(user,
-                "✅ Ordine ricevuto!\nTi contatteremo a breve.\n"
-                "Grazie per aver scelto Cortonese Carni!"
-            )
+Thread(target=send_email, args=(ordine_finale,)).start()
 
-            sessions[user] = {"step": "start"}
+print("🚀 THREAD AVVIATO")
 
-            return "OK", 200
+send_message(user,
+    "✅ Ordine ricevuto!\nTi contatteremo a breve.\nGrazie per aver scelto Cortonese Carni"
+)
 
+sessions[user] = {"step": "start"}
+
+return "OK", 200
     except Exception as e:
         print("❌ ERROR:", repr(e))
 
