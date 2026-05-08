@@ -151,8 +151,8 @@ def webhook():
             return "OK", 200
 
         # 🧾 STEP 5 - FINALE
-               if step == "indirizzo":
-                  try:
+        if step == "indirizzo":
+            try:
                 sessions[user]["indirizzo"] = text
 
                 ordine_finale = f"""
