@@ -91,8 +91,11 @@ def webhook():
         if step == "start":
             send_message(user,
                 "👋 Benvenuto in Cortonese Carni Srl!\n\n"
-                "📦 Scrivi 'catalogo' per vedere i prodotti\n"
-                "🧾 Scrivi 'ordine' per fare un ordine"
+                "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce."
+                "Le richieste vengono prese in carico dal nostro staff entro pochi minuti."
+                "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
+                "🧾 Scrivi ORDINE per effettuare un ordine"
+                "Per qualsiasi necessità, il nostro team è sempre a disposizione."         
             )
             sessions[user]["step"] = "menu"
             return "OK", 200
@@ -110,28 +113,28 @@ def webhook():
 
         # 🧾 ORDINE - STEP 1
         if text == "ordine":
-            send_message(user, "Perfetto 👍\nScrivi Nome e Cognome:")
+            send_message(user, "Perfetto 👍\nPer iniziare il tuo ordine, inserisci Nome e Cognome:")
             sessions[user]["step"] = "nome"
             return "OK", 200
 
         # 🧾 STEP 2
         if step == "nome":
             sessions[user]["nome"] = text
-            send_message(user, "Sei azienda o privato?")
+            send_message(user, "Ordini da parte di un'azienda o un privato?")
             sessions[user]["step"] = "tipo"
             return "OK", 200
 
         # 🧾 STEP 3
         if step == "tipo":
             sessions[user]["tipo"] = text
-            send_message(user, "Scrivi cosa vuoi ordinare:")
+            send_message(user, "Perfavore scrivi cosa vuoi ordinare con nome del prodotto e quantità desiderata:")
             sessions[user]["step"] = "ordine"
             return "OK", 200
 
         # 🧾 STEP 4
         if step == "ordine":
             sessions[user]["ordine"] = text
-            send_message(user, "Scrivi indirizzo di consegna:")
+            send_message(user, "Scrivi il tuo indirizzo di consegna:")
             sessions[user]["step"] = "indirizzo"
             return "OK", 200
 
@@ -152,8 +155,9 @@ Telefono: {user}
             send_email(ordine_finale)
 
             send_message(user,
-                "✅ Ordine ricevuto con successo!\n"
-                "Un nostro operatore ti contatterà a breve."
+                "✅ Ordine ricevuto con successo.|n"
+                "La richiesta è stata inoltrata al nostro staff e verrà presa in carico entro pochi minuti."
+                "Grazie per aver scelto Cortonese Carni Srl.\n"
             )
 
             sessions[user] = {"step": "start"}
@@ -161,9 +165,9 @@ Telefono: {user}
 
         # 🆘 FALLBACK UMANO
         send_message(user,
-            "🆘 Non ho capito.\n"
-            "Scrivi 'catalogo' o 'ordine'\n"
-            "📞 Oppure contatta un operatore"
+            "🆘 Non sono riuscito a comprendere correttamente la richiesta.\n"
+            "Per assistenza immediata puoi contattare direttamente un nostro operatore:"
+            "📞 +39 XXX XXX XXXX"
         )
 
         return "OK", 200
