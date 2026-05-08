@@ -166,7 +166,7 @@ def webhook():
         # 🧾 FINALE
         if step == "indirizzo":
             try:
-               sessions[user]["indirizzo"] = text
+                sessions[user]["indirizzo"] = text
 
         ordine_finale = f"""
 🧾 NUOVO ORDINE
@@ -182,16 +182,23 @@ Telefono: {user}
         print("📦 ORDINE COMPLETO")
         print(ordine_finale)
 
-        # 🚀 EMAIL ASINCRONA
-        print("🚀 AVVIO THREAD EMAIL")
+        print("🚀 AVVIO EMAIL THREAD")
         Thread(target=send_email, args=(ordine_finale,)).start()
-        print("🚀 THREAD AVVIATO")
 
         send_message(user,
-            "✅ Ordine ricevuto!\nTi contatteremo a breve.\nGrazie per aver scelto Cortonese Carni"
+            "✅ Ordine ricevuto!\nTi contatteremo a breve."
         )
 
         sessions[user] = {"step": "start"}
+
+        return "OK", 200
+
+    except Exception as e:
+        print("❌ ERRORE STEP FINALE:", repr(e))
+
+        send_message(user,
+            "⚠️ Errore tecnico. Contatta supporto."
+        )
 
         return "OK", 200
 
