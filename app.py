@@ -168,7 +168,7 @@ def webhook():
             try:
                 sessions[user]["indirizzo"] = text
 
-        ordine_finale = f"""
+                    ordine_finale = f"""
 🧾 NUOVO ORDINE
 
 Nome: {sessions[user]['nome']}
@@ -193,6 +193,14 @@ Telefono: {user}
 
         return "OK", 200
 
+    except Exception as e:
+        print("❌ ERRORE:", repr(e))
+
+        send_message(user,
+            "⚠️ Errore tecnico. Contatta supporto."
+        )
+
+        return "OK", 200
     except Exception as e:
         print("❌ ERRORE STEP FINALE:", repr(e))
 
