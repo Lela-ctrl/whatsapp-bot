@@ -16,10 +16,11 @@ EMAIL_USER = os.environ.get("EMAIL_USER")
 EMAIL_PASS = os.environ.get("EMAIL_PASS")
 EMAIL_TO = os.environ.get("EMAIL_TO")
 
+# 🧠 sessioni in memoria
 sessions = {}
 
 
-# 📩 WHATSAPP MESSAGE
+# 📩 WHATSAPP SEND
 def send_message(to, text):
     try:
         url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
@@ -39,18 +40,14 @@ def send_message(to, text):
         requests.post(url, headers=headers, json=payload)
 
     except Exception as e:
-        print("❌ WHATSAPP ERROR:", repr(e))
+        print("WHATSAPP ERROR:", repr(e))
 
 
-# 📧 FALLBACK
-def fallback(order_text):
-    with open("ordini_fallback.txt", "a", encoding="utf-8") as f:
-        f.write(order_text + "\n\n")
-
-
-# 📧 EMAIL
+# 📧 EMAIL SEND
 def send_email(order_text):
     try:
+        print("📧 INVIO EMAIL...")
+
         msg = MIMEText(order_text, _charset="utf-8")
         msg["Subject"] = "Nuovo ordine WhatsApp"
         msg["From"] = EMAIL_USER
@@ -71,11 +68,10 @@ def send_email(order_text):
         print("✅ EMAIL INVIATA")
 
     except Exception as e:
-        print("❌ EMAIL ERROR:", repr(e))
-        fallback(order_text)
+        print("EMAIL ERROR:", repr(e))
 
 
-# 🔐 VERIFY
+# 🔐 VERIFY WEBHOOK
 @app.route("/webhook", methods=["GET"])
 def verify():
     mode = request.args.get("hub.mode")
@@ -88,7 +84,7 @@ def verify():
     return "Forbidden", 403
 
 
-# 📩 WEBHOOK
+# 📩 WEBHOOK PRINCIPALE
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
@@ -108,44 +104,44 @@ def webhook():
 
         step = sessions[user]["step"]
 
-        # 👋 MESSAGGIO PRINCIPALE BRAND
+        # 👋 START / MENU
         if step == "start":
-            send_message(user,
-                "👋 *Benvenuto in Cortonese Carni Srl!*\n\n"
-                " Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n\n"
-                "🧾 Scrivi *ORDINE* per iniziare\n"
-                "📦 Scrivi *CATALOGO* per vedere i prodotti"
-                "Per qualsiasi necessità, il nostro team è sempre a vostra disposizione"
+            send_message(
+                user,
+                "👋 Benvenuto in Cortonese Carni Srl!\n\n"
+                "📦 Scrivi ORDINE per iniziare\n"
+                "📦 Scrivi CATALOGO per vedere i prodotti"
             )
             sessions[user]["step"] = "menu"
             return "OK", 200
 
         # 📦 CATALOGO
         if text == "catalogo":
-            send_message(user,
-                "📦 *CATALOGO PRODOTTI*\n\n"
+            send_message(
+                user,
+                "📦 CATALOGO PRODOTTI\n\n"
                 "🥩 Carne bovina\n🐖 Carne suina\n🍗 Pollame\n\n"
-                "👉 Scrivi *ORDINE* per acquistare"
+                "Scrivi ORDINE per acquistare"
             )
             return "OK", 200
 
         # 🧾 ORDINE START
         if text == "ordine":
-            send_message(user, "Perfetto 👍\nPer iniziare il tuo ordine, inserisci\nNome e Cognome:")
+            send_message(user, "Nome e Cognome?")
             sessions[user]["step"] = "nome"
             return "OK", 200
 
         # 🧾 NOME
         if step == "nome":
             sessions[user]["nome"] = text
-            send_message(user, "Ordini da parte di un'azienda o un privato?\n(scrivere il nome dell'azienda)")
+            send_message(user, "Privato o azienda?")
             sessions[user]["step"] = "tipo"
             return "OK", 200
 
         # 🧾 TIPO
         if step == "tipo":
             sessions[user]["tipo"] = text
-            send_message(user, "Perfavore scrivi cosa vuoi ordinare con nome e quantità dei prodotti!")
+            send_message(user, "Cosa vuoi ordinare?")
             sessions[user]["step"] = "ordine"
             return "OK", 200
 
@@ -159,15 +155,15 @@ def webhook():
         # 📅 DATA
         if step == "data":
             sessions[user]["data"] = text
-            send_message(user, "Perfavore scrivi il tuo indirizzo di consegna")
+            send_message(user, "Indirizzo di consegna?")
             sessions[user]["step"] = "indirizzo"
             return "OK", 200
 
-        # 🧾 FINALE
+        # 🧾 FINALE ORDINE
         if step == "indirizzo":
-            try:
-                sessions[user]["indirizzo"] = text
-                    ordine_finale = f"""
+            sessions[user]["indirizzo"] = text
+
+            ordine_finale = f"""
 🧾 NUOVO ORDINE
 
 Nome: {sessions[user]['nome']}
@@ -178,59 +174,20 @@ Indirizzo: {sessions[user]['indirizzo']}
 Telefono: {user}
 """
 
-        print("📦 ORDINE COMPLETO")
-        print(ordine_finale)
+            print("📦 ORDINE COMPLETO")
+            print(ordine_finale)
 
-        print("🚀 AVVIO EMAIL THREAD")
-        Thread(target=send_email, args=(ordine_finale,)).start()
+            # 🚀 EMAIL ASINCRONA
+            Thread(target=send_email, args=(ordine_finale,)).start()
 
-        send_message(user,
-            "✅ Ordine ricevuto!\nTi contatteremo a breve."
-        )
+            send_message(user, "✅ Ordine ricevuto! Ti contatteremo a breve.")
 
-        sessions[user] = {"step": "start"}
+            sessions[user] = {"step": "start"}
 
-        return "OK", 200
+            return "OK", 200
 
     except Exception as e:
-        print("❌ ERRORE:", repr(e))
-
-        send_message(user,
-            "⚠️ Errore tecnico. Contatta supporto."
-        )
-
-        return "OK", 200
-    except Exception as e:
-        print("❌ ERRORE STEP FINALE:", repr(e))
-
-        send_message(user,
-            "⚠️ Errore tecnico. Contatta supporto."
-        )
-
-        return "OK", 200
-
-    except Exception as e:
-        print("❌ ERRORE STEP FINALE:", repr(e))
-
-        send_message(user,
-            "⚠️ Errore tecnico, contatta supporto."
-        )
-
-        return "OK", 200
-        
-    except Exception as e:
-        print("❌ ERROR:", repr(e))
-
-        try:
-            send_message(user,
-                "⚠️ Errore tecnico.\n" 
-                "Per assistenza immediata puoi contattare direttamente un nostro operatore:\n" 
-                "📞 Emanuele +39 328 931 8272"
-            )
-        except:
-            pass
-
-        return "OK", 200
+        print("WEBHOOK ERROR:", repr(e))
 
     return "OK", 200
 
