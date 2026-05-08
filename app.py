@@ -165,9 +165,10 @@ def webhook():
 
         # 🧾 FINALE
         if step == "indirizzo":
-            sessions[user]["indirizzo"] = text
+    try:
+        sessions[user]["indirizzo"] = text
 
-            ordine_finale = f"""
+        ordine_finale = f"""
 🧾 NUOVO ORDINE
 
 Nome: {sessions[user]['nome']}
@@ -178,23 +179,31 @@ Indirizzo: {sessions[user]['indirizzo']}
 Telefono: {user}
 """
 
-            print("📦 ORDINE COMPLETO")
-print(ordine_finale)
+        print("📦 ORDINE COMPLETO")
+        print(ordine_finale)
 
-# 🚀 AVVIO EMAIL IN BACKGROUND (QUI VA IL FIX)
-print("🚀 AVVIO THREAD EMAIL")
+        # 🚀 EMAIL ASINCRONA
+        print("🚀 AVVIO THREAD EMAIL")
+        Thread(target=send_email, args=(ordine_finale,)).start()
+        print("🚀 THREAD AVVIATO")
 
-Thread(target=send_email, args=(ordine_finale,)).start()
+        send_message(user,
+            "✅ Ordine ricevuto!\nTi contatteremo a breve.\nGrazie per aver scelto Cortonese Carni"
+        )
 
-print("🚀 THREAD AVVIATO")
+        sessions[user] = {"step": "start"}
 
-send_message(user,
-    "✅ Ordine ricevuto!\nTi contatteremo a breve.\nGrazie per aver scelto Cortonese Carni"
-)
+        return "OK", 200
 
-sessions[user] = {"step": "start"}
+    except Exception as e:
+        print("❌ ERRORE STEP FINALE:", repr(e))
 
-return "OK", 200
+        send_message(user,
+            "⚠️ Errore tecnico, contatta supporto."
+        )
+
+        return "OK", 200
+        
     except Exception as e:
         print("❌ ERROR:", repr(e))
 
