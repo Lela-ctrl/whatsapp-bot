@@ -1,22 +1,20 @@
 from flask import Flask, request
 import requests
 import os
-import smtplib
-from email.mime.text import MIMEText
 from threading import Thread
+from email.mime.text import MIMEText
 
 app = Flask(__name__)
 
-# 🔐 ENV VARIABLES
+# 🔐 ENV VARIABLES (Render)
 VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
 
-EMAIL_USER = os.environ.get("EMAIL_USER")
-EMAIL_PASS = os.environ.get("EMAIL_PASS")
 EMAIL_TO = os.environ.get("EMAIL_TO")
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 
-# 🧠 sessioni in memoria
+# 🧠 sessioni utenti
 sessions = {}
 
 
@@ -43,40 +41,37 @@ def send_message(to, text):
         print("WHATSAPP ERROR:", repr(e))
 
 
-# 📧 EMAIL SEND
+# 📧 EMAIL (RESEND API)
 def send_email(order_text):
     try:
-        print("📧 START EMAIL")
+        print("📧 INVIO EMAIL VIA RESEND...")
 
-        msg = MIMEText(order_text, _charset="utf-8")
-        msg["Subject"] = "Nuovo ordine WhatsApp"
-        msg["From"] = EMAIL_USER
-        msg["To"] = EMAIL_TO
+        url = "https://api.resend.com/emails"
 
-        print("📡 CONNECT SMTP...")
+        headers = {
+            "Authorization": f"Bearer {RESEND_API_KEY}",
+            "Content-Type": "application/json"
+        }
 
-        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=20)
-        server.set_debuglevel(1)  # 🔥 IMPORTANTISSIMO
+        payload = {
+            "from": "Ordini <onboarding@resend.dev>",
+            "to": [EMAIL_TO],
+            "subject": "Nuovo ordine WhatsApp",
+            "text": order_text
+        }
 
-        server.ehlo()
-        print("🔐 STARTTLS...")
-        server.starttls()
-        server.ehlo()
+        response = requests.post(url, json=payload, headers=headers)
 
-        print("🔑 LOGIN TRY...")
+        print("📩 STATUS:", response.status_code)
+        print("📩 RESPONSE:", response.text)
 
-        server.login(EMAIL_USER, EMAIL_PASS)
-
-        print("📤 SENDING EMAIL...")
-
-        server.sendmail(EMAIL_USER, EMAIL_TO, msg.as_string())
-
-        server.quit()
-
-        print("✅ EMAIL SENT OK")
+        if response.status_code == 200:
+            print("✅ EMAIL INVIATA")
+        else:
+            print("❌ ERRORE INVIO EMAIL")
 
     except Exception as e:
-        print("❌ EMAIL ERROR FULL:", repr(e))
+        print("EMAIL ERROR:", repr(e))
 
 
 # 🔐 VERIFY WEBHOOK
@@ -112,13 +107,13 @@ def webhook():
 
         step = sessions[user]["step"]
 
-        # 👋 START / MENU
+        # 👋 START
         if step == "start":
             send_message(
                 user,
                 "👋 Benvenuto in Cortonese Carni Srl!\n\n"
-                "📦 Scrivi ORDINE per iniziare\n"
-                "📦 Scrivi CATALOGO per vedere i prodotti"
+                "Scrivi ORDINE per iniziare\n"
+                "Scrivi CATALOGO per vedere prodotti"
             )
             sessions[user]["step"] = "menu"
             return "OK", 200
@@ -127,13 +122,11 @@ def webhook():
         if text == "catalogo":
             send_message(
                 user,
-                "📦 CATALOGO PRODOTTI\n\n"
-                "🥩 Carne bovina\n🐖 Carne suina\n🍗 Pollame\n\n"
-                "Scrivi ORDINE per acquistare"
+                "📦 CATALOGO\n🥩 Carne bovina\n🐖 Carne suina\n🍗 Pollame"
             )
             return "OK", 200
 
-        # 🧾 ORDINE START
+        # 🧾 ORDINE
         if text == "ordine":
             send_message(user, "Nome e Cognome?")
             sessions[user]["step"] = "nome"
@@ -156,7 +149,7 @@ def webhook():
         # 🧾 ORDINE
         if step == "ordine":
             sessions[user]["ordine"] = text
-            send_message(user, "📅 Che giorno ti serve la consegna?")
+            send_message(user, "📅 Giorno consegna?")
             sessions[user]["step"] = "data"
             return "OK", 200
 
@@ -167,7 +160,7 @@ def webhook():
             sessions[user]["step"] = "indirizzo"
             return "OK", 200
 
-        # 🧾 FINALE ORDINE
+        # 📦 FINALE
         if step == "indirizzo":
             sessions[user]["indirizzo"] = text
 
