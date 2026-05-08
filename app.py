@@ -197,7 +197,7 @@ Telefono: {user}
             send_message(user,
                 "⚠️ Errore tecnico.\n" 
                 "Per assistenza immediata puoi contattare direttamente un nostro operatore:\n" 
-                "📞 Emanuele +39 328 931 8272""
+                "📞 Emanuele +39 328 931 8272"
             )
         except:
             pass
