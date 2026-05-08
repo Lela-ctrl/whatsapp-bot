@@ -3,10 +3,11 @@ import requests
 import os
 import smtplib
 from email.mime.text import MIMEText
+from threading import Thread
 
 app = Flask(__name__)
 
-# 🔐 ENV VARIABLES (Render)
+# 🔐 ENV VARIABLES
 VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
@@ -15,59 +16,66 @@ EMAIL_USER = os.environ.get("EMAIL_USER")
 EMAIL_PASS = os.environ.get("EMAIL_PASS")
 EMAIL_TO = os.environ.get("EMAIL_TO")
 
-# 🧠 sessioni utenti
 sessions = {}
 
 
-# 📩 INVIO WHATSAPP
+# 📩 WHATSAPP MESSAGE
 def send_message(to, text):
-    url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
+    try:
+        url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
 
-    headers = {
-        "Authorization": f"Bearer {ACCESS_TOKEN}",
-        "Content-Type": "application/json"
-    }
+        headers = {
+            "Authorization": f"Bearer {ACCESS_TOKEN}",
+            "Content-Type": "application/json"
+        }
 
-    payload = {
-        "messaging_product": "whatsapp",
-        "to": to,
-        "type": "text",
-        "text": {"body": text}
-    }
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": to,
+            "type": "text",
+            "text": {"body": text}
+        }
 
-    requests.post(url, headers=headers, json=payload)
+        requests.post(url, headers=headers, json=payload)
+
+    except Exception as e:
+        print("❌ WHATSAPP ERROR:", repr(e))
 
 
-# 📧 INVIO EMAIL ORDINE
+# 📧 FALLBACK
+def fallback(order_text):
+    with open("ordini_fallback.txt", "a", encoding="utf-8") as f:
+        f.write(order_text + "\n\n")
+
+
+# 📧 EMAIL
 def send_email(order_text):
     try:
-        msg = MIMEText(order_text)
+        msg = MIMEText(order_text, _charset="utf-8")
         msg["Subject"] = "Nuovo ordine WhatsApp"
         msg["From"] = EMAIL_USER
         msg["To"] = EMAIL_TO
 
-        print("📧 CONNESSIONE SMTP...")
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
 
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.set_debuglevel(1)  # 🔥 IMPORTANTISSIMO debug
+        server.ehlo()
         server.starttls()
-
-        print("🔐 LOGIN EMAIL...")
+        server.ehlo()
 
         server.login(EMAIL_USER, EMAIL_PASS)
 
-        print("📤 INVIO EMAIL...")
-
         server.sendmail(EMAIL_USER, EMAIL_TO, msg.as_string())
+
         server.quit()
 
-        print("✅ EMAIL INVIATA CON SUCCESSO")
+        print("✅ EMAIL INVIATA")
 
     except Exception as e:
-        print("❌ ERRORE EMAIL COMPLETO:", repr(e))
+        print("❌ EMAIL ERROR:", repr(e))
+        fallback(order_text)
 
 
-# 🔐 VERIFY WEBHOOK (GET)
+# 🔐 VERIFY
 @app.route("/webhook", methods=["GET"])
 def verify():
     mode = request.args.get("hub.mode")
@@ -80,15 +88,14 @@ def verify():
     return "Forbidden", 403
 
 
-# 📩 WEBHOOK PRINCIPALE (POST)
+# 📩 WEBHOOK
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.get_json()
-
     try:
+        data = request.get_json()
+
         value = data["entry"][0]["changes"][0]["value"]
 
-        # ❌ ignoriamo status
         if "messages" not in value:
             return "OK", 200
 
@@ -96,21 +103,18 @@ def webhook():
         user = message["from"]
         text = message.get("text", {}).get("body", "").lower()
 
-        # inizializza sessione
         if user not in sessions:
             sessions[user] = {"step": "start"}
 
         step = sessions[user]["step"]
 
-        # 👋 START
+        # 👋 MESSAGGIO PRINCIPALE BRAND
         if step == "start":
             send_message(user,
-                "👋 Benvenuto in Cortonese Carni Srl!\n\n"
-                "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
-                "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n"
-                "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
-                "🧾 Scrivi ORDINE per effettuare un ordine\n"
-                "Per qualsiasi necessità, il nostro team è sempre a disposizione."         
+                "👋 *Benvenuto in Cortonese Carni Srl!*\n\n"
+                "📦 Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n\n"
+                "🧾 Scrivi *ORDINE* per iniziare\n"
+                "📦 Scrivi *CATALOGO* per vedere i prodotti"
             )
             sessions[user]["step"] = "menu"
             return "OK", 200
@@ -118,110 +122,92 @@ def webhook():
         # 📦 CATALOGO
         if text == "catalogo":
             send_message(user,
-                "📦 CATALOGO PRODOTTI\n\n"
-                "🥩 Carne bovina\n"
-                "🐖 Carne suina\n"
-                "🍗 Pollame\n\n"
-                "👉 Scrivi 'ordine' per acquistare"
+                "📦 *CATALOGO PRODOTTI*\n\n"
+                "🥩 Carne bovina\n🐖 Carne suina\n🍗 Pollame\n\n"
+                "👉 Scrivi *ORDINE* per acquistare"
             )
             return "OK", 200
 
-        # 🧾 ORDINE - STEP 1
+        # 🧾 ORDINE START
         if text == "ordine":
             send_message(user, "Perfetto 👍\nPer iniziare il tuo ordine, inserisci\n Nome e Cognome:")
             sessions[user]["step"] = "nome"
             return "OK", 200
 
-        # 🧾 STEP 2
+        # 🧾 NOME
         if step == "nome":
             sessions[user]["nome"] = text
-            send_message(user, "Ordini da parte di un'azienda o un privato?\n(scrivere il nome dell'azienda)")
+            send_message(user, "Ordini da parte di un'azienda o un privato?\n(scrivere il nome dell'azienda")
             sessions[user]["step"] = "tipo"
             return "OK", 200
 
-        # 🧾 STEP 3
+        # 🧾 TIPO
         if step == "tipo":
             sessions[user]["tipo"] = text
-            send_message(user, "Perfavore scrivi cosa vuoi ordinare con nome del prodotto e quantità desiderata:")
+            send_message(user, "Perfavore scrivi cosa vuoi ordinare con nome e quantità dei prodotti!")
             sessions[user]["step"] = "ordine"
             return "OK", 200
 
-        # 🧾 STEP 4
+        # 🧾 ORDINE
         if step == "ordine":
             sessions[user]["ordine"] = text
-            send_message(user, "Scrivi il tuo indirizzo di consegna:")
+            send_message(user, "📅 Che giorno ti serve la consegna?")
+            sessions[user]["step"] = "data"
+            return "OK", 200
+
+        # 📅 DATA
+        if step == "data":
+            sessions[user]["data"] = text
+            send_message(user, "Perfavore scrivi il tuo indirizzo di consegna")
             sessions[user]["step"] = "indirizzo"
             return "OK", 200
 
-        # 🧾 STEP 5 - FINALE
+        # 🧾 FINALE
         if step == "indirizzo":
-            try:
-                sessions[user]["indirizzo"] = text
+            sessions[user]["indirizzo"] = text
 
-                ordine_finale = f"""
+            ordine_finale = f"""
 🧾 NUOVO ORDINE
 
 Nome: {sessions[user]['nome']}
 Tipo: {sessions[user]['tipo']}
 Ordine: {sessions[user]['ordine']}
+Data consegna: {sessions[user]['data']}
 Indirizzo: {sessions[user]['indirizzo']}
 Telefono: {user}
 """
 
-                print("📧 STO PROVANDO A INVIARE EMAIL...")
-                print(ordine_finale)
+            print(ordine_finale)
 
-                send_email(ordine_finale)
+            Thread(target=send_email, args=(ordine_finale,)).start()
 
-                print("✅ EMAIL INVIATA CORRETTAMENTE")
+            send_message(user,
+                "✅ Ordine ricevuto!\nTi contatteremo a breve.\n"
+                "Grazie per aver scelto Cortonese Carni!"
+            )
 
-                send_message(
-                    user,
-                    "✅ Ordine ricevuto con successo!\n"
-                    "Un nostro operatore prenderà in carico la richiesta a breve."
-                )
+            sessions[user] = {"step": "start"}
 
-                sessions[user] = {"step": "start"}
-
-                return "OK", 200
-
-            except Exception as e:
-                print("❌ ERRORE BLOCCO INDIRIZZO:", e)
-
-                send_message(
-                    user,
-                    "⚠️ Problema durante l'invio dell'ordine.\n"
-                    "Contatta direttamente il nostro staff."
-                )
-
-                return "OK", 200
-    except Exception as e:
-        print("❌ ERRORE BLOCCO INDIRIZZO:", e)
-
-        send_message(
-            user,
-            "⚠️ Si è verificato un problema durante l'invio dell'ordine.\n"
-            "Contatta direttamente il nostro staff."
-        )
-
-        return "OK", 200
-
-        # 🆘 FALLBACK UMANO
-        send_message(user,
-            "🆘 Non sono riuscito a comprendere correttamente la richiesta.\n"
-            "Per assistenza immediata puoi contattare direttamente un nostro operatore:"
-            "📞 Emanuele +39 328 931 8272"
-        )
-
-        return "OK", 200
+            return "OK", 200
 
     except Exception as e:
-        print("ERROR:", e)
+        print("❌ ERROR:", repr(e))
+
+        try:
+            send_message(user,
+                "⚠️ Errore tecnico.\n" 
+                "Per assistenza immediata puoi contattare direttamente un nostro operatore:\n" 
+                "📞 Emanuele +39 328 931 8272""
+            )
+        except:
+            pass
+
+        return "OK", 200
 
     return "OK", 200
 
 
-# 🚀 RUN (solo locale, Render usa gunicorn)
+# 🚀 RUN
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
