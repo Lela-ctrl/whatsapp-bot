@@ -167,7 +167,6 @@ def webhook():
         if step == "indirizzo":
             try:
                 sessions[user]["indirizzo"] = text
-
                     ordine_finale = f"""
 🧾 NUOVO ORDINE
 
