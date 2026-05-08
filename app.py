@@ -151,11 +151,11 @@ def webhook():
             return "OK", 200
 
         # 🧾 STEP 5 - FINALE
-        if step == "indirizzo":
-    try:
-        sessions[user]["indirizzo"] = text
+               if step == "indirizzo":
+                  try:
+                sessions[user]["indirizzo"] = text
 
-        ordine_finale = f"""
+                ordine_finale = f"""
 🧾 NUOVO ORDINE
 
 Nome: {sessions[user]['nome']}
@@ -165,23 +165,33 @@ Indirizzo: {sessions[user]['indirizzo']}
 Telefono: {user}
 """
 
-        print("📧 STO PROVANDO A INVIARE EMAIL...")
-        print(ordine_finale)
+                print("📧 STO PROVANDO A INVIARE EMAIL...")
+                print(ordine_finale)
 
-        send_email(ordine_finale)
+                send_email(ordine_finale)
 
-        print("✅ EMAIL INVIATA CORRETTAMENTE")
+                print("✅ EMAIL INVIATA CORRETTAMENTE")
 
-        send_message(
-            user,
-            "✅ Ordine ricevuto con successo!\n"
-            "Un nostro operatore lo prenderà in carico a breve."
-        )
+                send_message(
+                    user,
+                    "✅ Ordine ricevuto con successo!\n"
+                    "Un nostro operatore prenderà in carico la richiesta a breve."
+                )
 
-        sessions[user] = {"step": "start"}
+                sessions[user] = {"step": "start"}
 
-        return "OK", 200
+                return "OK", 200
 
+            except Exception as e:
+                print("❌ ERRORE BLOCCO INDIRIZZO:", e)
+
+                send_message(
+                    user,
+                    "⚠️ Problema durante l'invio dell'ordine.\n"
+                    "Contatta direttamente il nostro staff."
+                )
+
+                return "OK", 200
     except Exception as e:
         print("❌ ERRORE BLOCCO INDIRIZZO:", e)
 
