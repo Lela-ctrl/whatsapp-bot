@@ -46,29 +46,37 @@ def send_message(to, text):
 # 📧 EMAIL SEND
 def send_email(order_text):
     try:
-        print("📧 INVIO EMAIL...")
+        print("📧 START EMAIL")
 
         msg = MIMEText(order_text, _charset="utf-8")
         msg["Subject"] = "Nuovo ordine WhatsApp"
         msg["From"] = EMAIL_USER
         msg["To"] = EMAIL_TO
 
-        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=15)
+        print("📡 CONNECT SMTP...")
+
+        server = smtplib.SMTP("smtp.gmail.com", 587, timeout=20)
+        server.set_debuglevel(1)  # 🔥 IMPORTANTISSIMO
 
         server.ehlo()
+        print("🔐 STARTTLS...")
         server.starttls()
         server.ehlo()
 
+        print("🔑 LOGIN TRY...")
+
         server.login(EMAIL_USER, EMAIL_PASS)
+
+        print("📤 SENDING EMAIL...")
 
         server.sendmail(EMAIL_USER, EMAIL_TO, msg.as_string())
 
         server.quit()
 
-        print("✅ EMAIL INVIATA")
+        print("✅ EMAIL SENT OK")
 
     except Exception as e:
-        print("EMAIL ERROR:", repr(e))
+        print("❌ EMAIL ERROR FULL:", repr(e))
 
 
 # 🔐 VERIFY WEBHOOK
