@@ -152,9 +152,10 @@ def webhook():
 
         # 🧾 STEP 5 - FINALE
         if step == "indirizzo":
-            sessions[user]["indirizzo"] = text
+    try:
+        sessions[user]["indirizzo"] = text
 
-            ordine_finale = f"""
+        ordine_finale = f"""
 🧾 NUOVO ORDINE
 
 Nome: {sessions[user]['nome']}
@@ -164,22 +165,39 @@ Indirizzo: {sessions[user]['indirizzo']}
 Telefono: {user}
 """
 
-            send_email(ordine_finale)
+        print("📧 STO PROVANDO A INVIARE EMAIL...")
+        print(ordine_finale)
 
-            send_message(user,
-                "✅ Ordine ricevuto con successo.|n"
-                "La richiesta è stata inoltrata al nostro staff e verrà presa in carico entro pochi minuti."
-                "Grazie per aver scelto Cortonese Carni Srl.\n"
-            )
+        send_email(ordine_finale)
 
-            sessions[user] = {"step": "start"}
-            return "OK", 200
+        print("✅ EMAIL INVIATA CORRETTAMENTE")
+
+        send_message(
+            user,
+            "✅ Ordine ricevuto con successo!\n"
+            "Un nostro operatore lo prenderà in carico a breve."
+        )
+
+        sessions[user] = {"step": "start"}
+
+        return "OK", 200
+
+    except Exception as e:
+        print("❌ ERRORE BLOCCO INDIRIZZO:", e)
+
+        send_message(
+            user,
+            "⚠️ Si è verificato un problema durante l'invio dell'ordine.\n"
+            "Contatta direttamente il nostro staff."
+        )
+
+        return "OK", 200
 
         # 🆘 FALLBACK UMANO
         send_message(user,
             "🆘 Non sono riuscito a comprendere correttamente la richiesta.\n"
             "Per assistenza immediata puoi contattare direttamente un nostro operatore:"
-            "📞 +39 XXX XXX XXXX"
+            "📞 Emanuele +39 328 931 8272"
         )
 
         return "OK", 200
