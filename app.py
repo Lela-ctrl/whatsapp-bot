@@ -112,8 +112,11 @@ def webhook():
             send_message(
                 user,
                 "👋 Benvenuto in Cortonese Carni Srl!\n\n"
-                "Scrivi ORDINE per iniziare\n"
-                "Scrivi CATALOGO per vedere prodotti"
+                "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
+                "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n"
+                "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
+                "🧾 Scrivi ORDINE per effettuare un ordine\n\n"
+                "Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!."
             )
             sessions[user]["step"] = "menu"
             return "OK", 200
@@ -128,35 +131,35 @@ def webhook():
 
         # 🧾 ORDINE
         if text == "ordine":
-            send_message(user, "Nome e Cognome?")
+            send_message(user, "Perfetto 👍\n\nPer iniziare il tuo ordine, inserisci\n Nome e Cognome:")
             sessions[user]["step"] = "nome"
             return "OK", 200
 
         # 🧾 NOME
         if step == "nome":
             sessions[user]["nome"] = text
-            send_message(user, "Privato o azienda?")
+            send_message(user, "Ordini da parte di un'azienda o un privato?\n\n(scrivere il nome dell'azienda)")
             sessions[user]["step"] = "tipo"
             return "OK", 200
 
         # 🧾 TIPO
         if step == "tipo":
             sessions[user]["tipo"] = text
-            send_message(user, "Cosa vuoi ordinare?")
+            send_message(user, ""Perfavore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata:")
             sessions[user]["step"] = "ordine"
             return "OK", 200
 
         # 🧾 ORDINE
         if step == "ordine":
             sessions[user]["ordine"] = text
-            send_message(user, "📅 Giorno consegna?")
+            send_message(user, "Scrivi la data in cui vorresti ricevere il tuo ordine")
             sessions[user]["step"] = "data"
             return "OK", 200
 
         # 📅 DATA
         if step == "data":
             sessions[user]["data"] = text
-            send_message(user, "Indirizzo di consegna?")
+            send_message(user, "Scrivi il tuo indirizzo di consegna:")
             sessions[user]["step"] = "indirizzo"
             return "OK", 200
 
@@ -181,7 +184,7 @@ Telefono: {user}
             # 🚀 EMAIL ASINCRONA
             Thread(target=send_email, args=(ordine_finale,)).start()
 
-            send_message(user, "✅ Ordine ricevuto! Ti contatteremo a breve.")
+            send_message(user, "✅ Ordine ricevuto!\n\nUn nostro operatore prenderà in carico la richiesta a breve.\n\nGrazie per aver scelto Cortonese Carni!")
 
             sessions[user] = {"step": "start"}
 
