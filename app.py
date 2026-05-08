@@ -40,16 +40,28 @@ def send_message(to, text):
 
 # 📧 INVIO EMAIL ORDINE
 def send_email(order_text):
-    msg = MIMEText(order_text)
-    msg["Subject"] = "Nuovo ordine WhatsApp"
-    msg["From"] = EMAIL_USER
-    msg["To"] = EMAIL_TO
+    try:
+        msg = MIMEText(order_text)
+        msg["Subject"] = "Nuovo ordine WhatsApp"
+        msg["From"] = EMAIL_USER
+        msg["To"] = EMAIL_TO
 
-    server = smtplib.SMTP("smtp.gmail.com", 587)
-    server.starttls()
-    server.login(EMAIL_USER, EMAIL_PASS)
-    server.sendmail(EMAIL_USER, EMAIL_TO, msg.as_string())
-    server.quit()
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(EMAIL_USER, EMAIL_PASS)
+
+        server.sendmail(
+            EMAIL_USER,
+            EMAIL_TO,
+            msg.as_string()
+        )
+
+        server.quit()
+
+        print("✅ EMAIL INVIATA")
+
+    except Exception as e:
+        print("❌ ERRORE EMAIL:", e)
 
 
 # 🔐 VERIFY WEBHOOK (GET)
