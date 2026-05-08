@@ -91,10 +91,10 @@ def webhook():
         if step == "start":
             send_message(user,
                 "👋 Benvenuto in Cortonese Carni Srl!\n\n"
-                "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce."
-                "Le richieste vengono prese in carico dal nostro staff entro pochi minuti."
+                "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
+                "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n"
                 "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
-                "🧾 Scrivi ORDINE per effettuare un ordine"
+                "🧾 Scrivi ORDINE per effettuare un ordine\n"
                 "Per qualsiasi necessità, il nostro team è sempre a disposizione."         
             )
             sessions[user]["step"] = "menu"
@@ -113,14 +113,14 @@ def webhook():
 
         # 🧾 ORDINE - STEP 1
         if text == "ordine":
-            send_message(user, "Perfetto 👍\nPer iniziare il tuo ordine, inserisci Nome e Cognome:")
+            send_message(user, "Perfetto 👍\nPer iniziare il tuo ordine, inserisci\n Nome e Cognome:")
             sessions[user]["step"] = "nome"
             return "OK", 200
 
         # 🧾 STEP 2
         if step == "nome":
             sessions[user]["nome"] = text
-            send_message(user, "Ordini da parte di un'azienda o un privato?")
+            send_message(user, "Ordini da parte di un'azienda o un privato?\n(scrivere il nome dell'azienda)")
             sessions[user]["step"] = "tipo"
             return "OK", 200
 
