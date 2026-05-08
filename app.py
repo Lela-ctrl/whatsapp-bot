@@ -46,22 +46,25 @@ def send_email(order_text):
         msg["From"] = EMAIL_USER
         msg["To"] = EMAIL_TO
 
+        print("📧 CONNESSIONE SMTP...")
+
         server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.set_debuglevel(1)  # 🔥 IMPORTANTISSIMO debug
         server.starttls()
+
+        print("🔐 LOGIN EMAIL...")
+
         server.login(EMAIL_USER, EMAIL_PASS)
 
-        server.sendmail(
-            EMAIL_USER,
-            EMAIL_TO,
-            msg.as_string()
-        )
+        print("📤 INVIO EMAIL...")
 
+        server.sendmail(EMAIL_USER, EMAIL_TO, msg.as_string())
         server.quit()
 
-        print("✅ EMAIL INVIATA")
+        print("✅ EMAIL INVIATA CON SUCCESSO")
 
     except Exception as e:
-        print("❌ ERRORE EMAIL:", e)
+        print("❌ ERRORE EMAIL COMPLETO:", repr(e))
 
 
 # 🔐 VERIFY WEBHOOK (GET)
