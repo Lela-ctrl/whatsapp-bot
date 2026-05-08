@@ -55,7 +55,7 @@ def send_email(order_text):
 
         payload = {
             "from": "Ordini <onboarding@resend.dev>",
-            "to": ["cortonesecarnisrl@gmail.com"],
+            "to": ["michela.falini17@gmail.com"],
             "subject": "Nuovo ordine WhatsApp",
             "text": order_text
         }
