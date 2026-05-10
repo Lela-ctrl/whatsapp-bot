@@ -52,12 +52,15 @@ def send_email(order_text):
         password = EMAIL_PASS
         destinatario = EMAIL_TO
 
+        print("DEBUG →", mittente, destinatario)
+
         msg = MIMEText(order_text)
         msg["Subject"] = "Nuovo ordine WhatsApp"
         msg["From"] = mittente
         msg["To"] = destinatario
 
         server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.set_debuglevel(1)  # 🔥 IMPORTANTISSIMO DEBUG
         server.starttls()
         server.login(mittente, password)
         server.send_message(msg)
@@ -66,8 +69,7 @@ def send_email(order_text):
         print("✅ EMAIL INVIATA")
 
     except Exception as e:
-        print("EMAIL ERROR:", repr(e))
-
+        print("❌ EMAIL ERROR:", repr(e))
 
 # 🔐 VERIFY WEBHOOK
 @app.route("/webhook", methods=["GET"])
