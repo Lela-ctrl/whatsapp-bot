@@ -2,8 +2,6 @@ from flask import Flask, request
 import requests
 import os
 from threading import Thread
-import smtplib
-from email.mime.text import MIMEText
 
 app = Flask(__name__)
 
@@ -12,9 +10,8 @@ VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
 
-EMAIL_USER = os.environ.get("EMAIL_USER")
-EMAIL_PASS = os.environ.get("EMAIL_PASS")
 EMAIL_TO = os.environ.get("EMAIL_TO")
+SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
 
 # 🧠 sessioni utenti
 sessions = {}
@@ -43,33 +40,51 @@ def send_message(to, text):
         print("WHATSAPP ERROR:", repr(e))
 
 
-# 📧 EMAIL (SMTP GMAIL)
+# 📧 EMAIL (SENDGRID)
 def send_email(order_text):
     try:
-        print("📧 INVIO EMAIL SMTP...")
+        print("📧 INVIO EMAIL SENDGRID...")
 
-        mittente = EMAIL_USER
-        password = EMAIL_PASS
-        destinatario = EMAIL_TO
+        url = "https://api.sendgrid.com/v3/mail/send"
 
-        print("DEBUG →", mittente, destinatario)
+        headers = {
+            "Authorization": f"Bearer {SENDGRID_API_KEY}",
+            "Content-Type": "application/json"
+        }
 
-        msg = MIMEText(order_text)
-        msg["Subject"] = "Nuovo ordine WhatsApp"
-        msg["From"] = mittente
-        msg["To"] = destinatario
+        payload = {
+            "personalizations": [
+                {
+                    "to": [
+                        {"email": EMAIL_TO}
+                    ]
+                }
+            ],
+            "from": {
+                "email": "ordinibot@gmail.com"
+            },
+            "subject": "🧾 Nuovo ordine WhatsApp",
+            "content": [
+                {
+                    "type": "text/plain",
+                    "value": order_text
+                }
+            ]
+        }
 
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.set_debuglevel(1)  # 🔥 IMPORTANTISSIMO DEBUG
-        server.starttls()
-        server.login(mittente, password)
-        server.send_message(msg)
-        server.quit()
+        response = requests.post(url, json=payload, headers=headers)
 
-        print("✅ EMAIL INVIATA")
+        print("📩 STATUS:", response.status_code)
+        print("📩 RESPONSE:", response.text)
+
+        if response.status_code in [200, 202]:
+            print("✅ EMAIL INVIATA")
+        else:
+            print("❌ ERRORE INVIO EMAIL")
 
     except Exception as e:
-        print("❌ EMAIL ERROR:", repr(e))
+        print("EMAIL ERROR:", repr(e))
+
 
 # 🔐 VERIFY WEBHOOK
 @app.route("/webhook", methods=["GET"])
