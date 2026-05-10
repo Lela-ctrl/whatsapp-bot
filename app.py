@@ -40,8 +40,8 @@ def send_message(to, text):
         print("WHATSAPP ERROR:", repr(e))
 
 
-# 📧 EMAIL (SENDGRID - VERSIONE PROFESSIONALE HTML)
-def send_email(order_text):
+# 📧 EMAIL (SENDGRID STABILE - NO SESSION BUG)
+def send_email(user, nome, tipo, ordine, data, indirizzo):
     try:
         print("📧 INVIO EMAIL SENDGRID...")
 
@@ -62,17 +62,17 @@ def send_email(order_text):
 
                 <hr>
 
-                <p><strong>Nome:</strong> {sessions[list(sessions.keys())[-1]]['nome']}</p>
-                <p><strong>Tipo cliente:</strong> {sessions[list(sessions.keys())[-1]]['tipo']}</p>
-                <p><strong>Ordine:</strong><br>{sessions[list(sessions.keys())[-1]]['ordine']}</p>
-                <p><strong>Data consegna:</strong> {sessions[list(sessions.keys())[-1]]['data']}</p>
-                <p><strong>Indirizzo:</strong> {sessions[list(sessions.keys())[-1]]['indirizzo']}</p>
-                <p><strong>Telefono:</strong> {list(sessions.keys())[-1]}</p>
+                <p><strong>Nome:</strong> {nome}</p>
+                <p><strong>Tipo cliente:</strong> {tipo}</p>
+                <p><strong>Ordine:</strong><br>{ordine}</p>
+                <p><strong>Data consegna:</strong> {data}</p>
+                <p><strong>Indirizzo:</strong> {indirizzo}</p>
+                <p><strong>Telefono:</strong> {user}</p>
 
                 <hr>
 
                 <p style="font-size:12px; color:#888;">
-                    Email generata automaticamente dal sistema ordini WhatsApp - Cortonese Carni Srl
+                    Sistema automatico WhatsApp - Cortonese Carni Srl
                 </p>
 
             </div>
@@ -84,9 +84,7 @@ def send_email(order_text):
         payload = {
             "personalizations": [
                 {
-                    "to": [
-                        {"email": EMAIL_TO}
-                    ]
+                    "to": [{"email": EMAIL_TO}]
                 }
             ],
             "from": {
@@ -212,21 +210,16 @@ def webhook():
         if step == "indirizzo":
             sessions[user]["indirizzo"] = text
 
-            ordine_finale = f"""
-🧾 NUOVO ORDINE
-
-Nome: {sessions[user]['nome']}
-Tipo: {sessions[user]['tipo']}
-Ordine: {sessions[user]['ordine']}
-Data consegna: {sessions[user]['data']}
-Indirizzo: {sessions[user]['indirizzo']}
-Telefono: {user}
-"""
-
             print("📦 ORDINE COMPLETO")
-            print(ordine_finale)
 
-            Thread(target=send_email, args=(ordine_finale,)).start()
+            Thread(target=send_email, args=(
+                user,
+                sessions[user]["nome"],
+                sessions[user]["tipo"],
+                sessions[user]["ordine"],
+                sessions[user]["data"],
+                sessions[user]["indirizzo"]
+            )).start()
 
             send_message(user, "✅ Ordine ricevuto!\n\nUn nostro operatore prenderà in carico la richiesta a breve.\n\nGrazie per aver scelto Cortonese Carni!")
 
