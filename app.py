@@ -174,7 +174,7 @@ def webhook():
 
         # 🧾 ORDINE
         if text == "ordine":
-            send_message(user, "Perfetto 👍\n\nPer iniziare il tuo ordine, inserisci\n Nome e Cognome:")
+            send_message(user, "Perfetto 👍\n\nPer iniziare il tuo ordine, inserisci\nNome e Cognome:")
             sessions[user]["step"] = "nome"
             return "OK", 200
 
@@ -188,7 +188,7 @@ def webhook():
         # 🧾 TIPO
         if step == "tipo":
             sessions[user]["tipo"] = text
-            send_message(user, "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata:")
+            send_message(user, "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata\n (in un solo messaggio):")
             sessions[user]["step"] = "ordine"
             return "OK", 200
 
