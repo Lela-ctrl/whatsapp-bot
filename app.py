@@ -40,7 +40,7 @@ def send_message(to, text):
         print("WHATSAPP ERROR:", repr(e))
 
 
-# 📧 EMAIL (SENDGRID)
+# 📧 EMAIL (SENDGRID - VERSIONE PROFESSIONALE HTML)
 def send_email(order_text):
     try:
         print("📧 INVIO EMAIL SENDGRID...")
@@ -52,6 +52,35 @@ def send_email(order_text):
             "Content-Type": "application/json"
         }
 
+        html_body = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; background-color:#f6f6f6; padding:20px;">
+
+            <div style="max-width:600px; margin:auto; background:white; padding:20px; border-radius:10px;">
+
+                <h2 style="color:#2c3e50;">🧾 Nuovo Ordine Ricevuto</h2>
+
+                <hr>
+
+                <p><strong>Nome:</strong> {sessions[list(sessions.keys())[-1]]['nome']}</p>
+                <p><strong>Tipo cliente:</strong> {sessions[list(sessions.keys())[-1]]['tipo']}</p>
+                <p><strong>Ordine:</strong><br>{sessions[list(sessions.keys())[-1]]['ordine']}</p>
+                <p><strong>Data consegna:</strong> {sessions[list(sessions.keys())[-1]]['data']}</p>
+                <p><strong>Indirizzo:</strong> {sessions[list(sessions.keys())[-1]]['indirizzo']}</p>
+                <p><strong>Telefono:</strong> {list(sessions.keys())[-1]}</p>
+
+                <hr>
+
+                <p style="font-size:12px; color:#888;">
+                    Email generata automaticamente dal sistema ordini WhatsApp - Cortonese Carni Srl
+                </p>
+
+            </div>
+
+        </body>
+        </html>
+        """
+
         payload = {
             "personalizations": [
                 {
@@ -61,13 +90,14 @@ def send_email(order_text):
                 }
             ],
             "from": {
-                "email": "ordinibot@gmail.com"
+                "email": "ordinibot@gmail.com",
+                "name": "Cortonese Carni Ordini"
             },
-            "subject": "🧾 Nuovo ordine WhatsApp",
+            "subject": "🧾 Nuovo ordine ricevuto - Cortonese Carni",
             "content": [
                 {
-                    "type": "text/plain",
-                    "value": order_text
+                    "type": "text/html",
+                    "value": html_body
                 }
             ]
         }
@@ -196,7 +226,6 @@ Telefono: {user}
             print("📦 ORDINE COMPLETO")
             print(ordine_finale)
 
-            # 🚀 EMAIL ASINCRONA
             Thread(target=send_email, args=(ordine_finale,)).start()
 
             send_message(user, "✅ Ordine ricevuto!\n\nUn nostro operatore prenderà in carico la richiesta a breve.\n\nGrazie per aver scelto Cortonese Carni!")
