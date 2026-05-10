@@ -2,7 +2,6 @@ from flask import Flask, request
 import requests
 import os
 from threading import Thread
-from email.mime.text import MIMEText
 
 app = Flask(__name__)
 
@@ -55,7 +54,7 @@ def send_email(order_text):
 
         payload = {
             "from": "Ordini <onboarding@resend.dev>",
-            "to": ["michela.falini17@gmail.com"],
+            "to": [EMAIL_TO],
             "subject": "Nuovo ordine WhatsApp",
             "text": order_text
         }
@@ -65,7 +64,7 @@ def send_email(order_text):
         print("📩 STATUS:", response.status_code)
         print("📩 RESPONSE:", response.text)
 
-        if response.status_code == 200:
+        if response.status_code in [200, 202]:
             print("✅ EMAIL INVIATA")
         else:
             print("❌ ERRORE INVIO EMAIL")
@@ -92,6 +91,9 @@ def verify():
 def webhook():
     try:
         data = request.get_json()
+
+        if not data:
+            return "No data", 400
 
         value = data["entry"][0]["changes"][0]["value"]
 
