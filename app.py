@@ -2,6 +2,8 @@ from flask import Flask, request
 import requests
 import os
 from threading import Thread
+import smtplib
+from email.mime.text import MIMEText
 
 app = Flask(__name__)
 
@@ -10,8 +12,9 @@ VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
 
+EMAIL_USER = os.environ.get("EMAIL_USER")
+EMAIL_PASS = os.environ.get("EMAIL_PASS")
 EMAIL_TO = os.environ.get("EMAIL_TO")
-RESEND_API_KEY = os.environ.get("RESEND_API_KEY")
 
 # 🧠 sessioni utenti
 sessions = {}
@@ -40,34 +43,27 @@ def send_message(to, text):
         print("WHATSAPP ERROR:", repr(e))
 
 
-# 📧 EMAIL (RESEND API)
+# 📧 EMAIL (SMTP GMAIL)
 def send_email(order_text):
     try:
-        print("📧 INVIO EMAIL VIA RESEND...")
+        print("📧 INVIO EMAIL SMTP...")
 
-        url = "https://api.resend.com/emails"
+        mittente = EMAIL_USER
+        password = EMAIL_PASS
+        destinatario = EMAIL_TO
 
-        headers = {
-            "Authorization": f"Bearer {RESEND_API_KEY}",
-            "Content-Type": "application/json"
-        }
+        msg = MIMEText(order_text)
+        msg["Subject"] = "Nuovo ordine WhatsApp"
+        msg["From"] = mittente
+        msg["To"] = destinatario
 
-        payload = {
-            "from": "Ordini <onboarding@resend.dev>",
-            "to": [EMAIL_TO],
-            "subject": "Nuovo ordine WhatsApp",
-            "text": order_text
-        }
+        server = smtplib.SMTP("smtp.gmail.com", 587)
+        server.starttls()
+        server.login(mittente, password)
+        server.send_message(msg)
+        server.quit()
 
-        response = requests.post(url, json=payload, headers=headers)
-
-        print("📩 STATUS:", response.status_code)
-        print("📩 RESPONSE:", response.text)
-
-        if response.status_code in [200, 202]:
-            print("✅ EMAIL INVIATA")
-        else:
-            print("❌ ERRORE INVIO EMAIL")
+        print("✅ EMAIL INVIATA")
 
     except Exception as e:
         print("EMAIL ERROR:", repr(e))
@@ -140,14 +136,14 @@ def webhook():
         # 🧾 NOME
         if step == "nome":
             sessions[user]["nome"] = text
-            send_message(user, "Ordini da parte di un'azienda o un privato?\n\n(scrivere il nome dell'azienda)")
+            send_message(user, "Ordini da parte di un' azienda o un privato?\n\n(scrivere il nome dell'azienda)")
             sessions[user]["step"] = "tipo"
             return "OK", 200
 
         # 🧾 TIPO
         if step == "tipo":
             sessions[user]["tipo"] = text
-            send_message(user, "Perfavore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata:")
+            send_message(user, "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata:")
             sessions[user]["step"] = "ordine"
             return "OK", 200
 
