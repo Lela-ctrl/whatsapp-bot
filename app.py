@@ -88,7 +88,7 @@ def send_email(user, nome, tipo, ordine, data, indirizzo):
                 }
             ],
             "from": {
-                "email": "no-reply@sendgrid.net",
+                "email": "ordinibot@gmail.com",
                 "name": "Cortonese Carni Ordini"
             },
             "subject": "🧾 Nuovo ordine ricevuto - Cortonese Carni",
