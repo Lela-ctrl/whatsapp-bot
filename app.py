@@ -165,10 +165,10 @@ def webhook():
             return "OK", 200
 
         # 📦 CATALOGO
-       if text == "catalogo":
-           send_message(
-               user,
-                   "📦 Ecco il nostro catalogo completo:\nhttps://drive.google.com/file/d/1wqqPoIYDuPtxxNvFeZJFk8FzmvM7WiQm/view?usp=sharing"
+        if text == "catalogo":
+            send_message(
+                user,
+                "📦 Ecco il nostro catalogo completo:\n\nhttps://drive.google.com/file/d/1wqqPoIYDuPtxxNvFeZJFk8FzmvM7WiQm/view?usp=sharing"
             )
             return "OK", 200
 
