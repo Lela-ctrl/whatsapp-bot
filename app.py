@@ -40,8 +40,8 @@ def send_message(to, text):
         print("WHATSAPP ERROR:", repr(e))
 
 
-# 📧 EMAIL (SENDGRID STABILE - NO SESSION BUG)
-def send_email(user, nome, tipo, ordine, data, indirizzo):
+# 📧 EMAIL (SENDGRID STABILE)
+def send_email(user, nome, tipo, ordine, data, email, indirizzo):
     try:
         print("📧 INVIO EMAIL SENDGRID...")
 
@@ -66,6 +66,7 @@ def send_email(user, nome, tipo, ordine, data, indirizzo):
                 <p><strong>Tipo cliente:</strong> {tipo}</p>
                 <p><strong>Ordine:</strong><br>{ordine}</p>
                 <p><strong>Data consegna:</strong> {data}</p>
+                <p><strong>Email:</strong> {email}</p>
                 <p><strong>Indirizzo:</strong> {indirizzo}</p>
                 <p><strong>Telefono:</strong> {user}</p>
 
@@ -168,7 +169,7 @@ def webhook():
         if text == "catalogo":
             send_message(
                 user,
-                "📦 Ecco il nostro catalogo completo:\nhttps://drive.google.com/file/d/1juVIPd_MkqJpDjtgfzM7o_jMUfLiphCC/view?usp=sharing"
+                "📦 Ecco il nostro catalogo completo:\n\nhttps://drive.google.com/file/d/1wqqPoIYDuPtxxNvFeZJFk8FzmvM7WiQm/view?usp=sharing"
             )
             return "OK", 200
 
@@ -202,6 +203,13 @@ def webhook():
         # 📅 DATA
         if step == "data":
             sessions[user]["data"] = text
+            send_message(user, "Scrivi il tuo indirizzo email:")
+            sessions[user]["step"] = "email"
+            return "OK", 200
+
+        # 📧 EMAIL
+        if step == "email":
+            sessions[user]["email"] = text
             send_message(user, "Scrivi il tuo indirizzo di consegna:")
             sessions[user]["step"] = "indirizzo"
             return "OK", 200
@@ -218,6 +226,7 @@ def webhook():
                 sessions[user]["tipo"],
                 sessions[user]["ordine"],
                 sessions[user]["data"],
+                sessions[user]["email"],
                 sessions[user]["indirizzo"]
             )).start()
 
