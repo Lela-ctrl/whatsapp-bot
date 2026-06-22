@@ -18,6 +18,7 @@ sessions = {}
 
 
 # 📩 WHATSAPP SEND
+# 📩 WHATSAPP SEND
 def send_message(to, text):
     try:
         url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
@@ -34,7 +35,14 @@ def send_message(to, text):
             "text": {"body": text}
         }
 
-        requests.post(url, headers=headers, json=payload)
+        response = requests.post(
+            url,
+            headers=headers,
+            json=payload
+        )
+
+        print("WHATSAPP STATUS:", response.status_code)
+        print("WHATSAPP RESPONSE:", response.text)
 
     except Exception as e:
         print("WHATSAPP ERROR:", repr(e))
