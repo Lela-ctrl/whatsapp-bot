@@ -139,34 +139,37 @@ def verify():
 # 📩 WEBHOOK PRINCIPALE
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    try:
-        data = request.get_json()
+    text = message.get("text", {}).get("body", "").lower()
 
-        print("FULL PAYLOAD:", data)
+if user not in sessions:
+    sessions[user] = {"step": "start"}
 
-        if not data:
-            return "OK", 200
+step = sessions[user]["step"]
 
-        value = data["entry"][0]["changes"][0]["value"]
-
-        print("VALUE KEYS:", value.keys())
-
-        if "messages" not in value:
-            print("NO MESSAGES (only status or other event)")
-            return "OK", 200
-
-        message = value["messages"][0]
-        user = message["from"]
-        text = message.get("text", {}).get("body", "").lower()
-
-        print("MESSAGE:", text)
-
-        return "OK", 200
-
-    except Exception as e:
-        print("WEBHOOK ERROR:", repr(e))
-
+# 👋 primo contatto
+if step == "start":
+    send_message(
+        user,
+        "👋 Benvenuto in Cortonese Carni Srl!\n\n"
+        "Scrivi CATALOGO oppure ORDINE"
+    )
+    sessions[user]["step"] = "menu"
     return "OK", 200
+
+# 📦 catalogo
+if text == "catalogo":
+    send_message(user, "📦 https://drive.google.com/....")
+    return "OK", 200
+
+# 🧾 ordine
+if text == "ordine":
+    send_message(user, "Scrivi Nome e Cognome:")
+    sessions[user]["step"] = "nome"
+    return "OK", 200
+
+# fallback
+send_message(user, "Scrivi CATALOGO o ORDINE per iniziare")
+return "OK", 200
 
 
 # 🚀 RUN
