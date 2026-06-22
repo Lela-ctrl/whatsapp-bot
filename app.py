@@ -163,6 +163,8 @@ def webhook():
     except Exception as e:
         print("ERROR:", repr(e))
 
+        send_message(user, "👋 Ho ricevuto il tuo messaggio: " + text)
+
     return "OK", 200
 
 # 🚀 RUN
