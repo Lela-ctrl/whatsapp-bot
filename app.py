@@ -139,29 +139,30 @@ def verify():
 # 📩 WEBHOOK PRINCIPALE
 @app.route("/webhook", methods=["POST"])
 def webhook():
-    data = request.get_json()
-
-    print("\n\n🔥 FULL PAYLOAD:")
-    print(data)
-
     try:
+        data = request.get_json()
+
+        print("FULL PAYLOAD:", data)
+
+        if not data:
+            return "OK", 200
+
         value = data["entry"][0]["changes"][0]["value"]
 
-        print("\n🔥 VALUE KEYS:", value.keys())
+        print("VALUE KEYS:", value.keys())
 
         if "messages" not in value:
-            print("⚠️ Nessun messaggio (solo status o altro)")
+            print("NO MESSAGES (only status or other event)")
             return "OK", 200
 
         message = value["messages"][0]
-        print("📩 MESSAGE:", message)
+        user = message["from"]
+        text = message.get("text", {}).get("body", "").lower()
+
+        print("MESSAGE:", text)
 
         return "OK", 200
 
-    except Exception as e:
-        print("❌ ERROR:", repr(e))
-
-    return "OK", 200
     except Exception as e:
         print("WEBHOOK ERROR:", repr(e))
 
