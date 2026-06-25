@@ -5,7 +5,7 @@ from threading import Thread
 
 app = Flask(__name__)
 
-# 🔐 ENV VARIABLES (Render)
+# 🔐 ENV VARIABLES
 VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
@@ -13,10 +13,9 @@ PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
 EMAIL_TO = os.environ.get("EMAIL_TO")
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
 
-# 📊 GOOGLE SHEETS WEB APP URL (INCOLLA QUI)
+# 📊 GOOGLE SHEETS
 GOOGLE_SHEET_URL = "INCOLLA_QUI_URL_GOOGLE_SCRIPT"
 
-# 🧠 sessioni utenti
 sessions = {}
 
 
@@ -43,11 +42,9 @@ def send_message(to, text):
         print("WHATSAPP ERROR:", repr(e))
 
 
-# 📧 EMAIL (SENDGRID STABILE)
+# 📧 EMAIL
 def send_email(user, nome, tipo, ordine, data, email, indirizzo):
     try:
-        print("📧 INVIO EMAIL SENDGRID...")
-
         url = "https://api.sendgrid.com/v3/mail/send"
 
         headers = {
@@ -57,66 +54,39 @@ def send_email(user, nome, tipo, ordine, data, email, indirizzo):
 
         html_body = f"""
         <html>
-        <body style="font-family: Arial, sans-serif; background-color:#f6f6f6; padding:20px;">
+        <body>
 
-            <div style="max-width:600px; margin:auto; background:white; padding:20px; border-radius:10px;">
+        <h2>🧾 Nuovo Ordine Ricevuto</h2>
 
-                <h2 style="color:#2c3e50;">🧾 Nuovo Ordine Ricevuto</h2>
-
-                <hr>
-
-                <p><strong>Nome:</strong> {nome}</p>
-                <p><strong>Tipo cliente:</strong> {tipo}</p>
-                <p><strong>Ordine:</strong><br>{ordine}</p>
-                <p><strong>Data consegna:</strong> {data}</p>
-                <p><strong>Email:</strong> {email}</p>
-                <p><strong>Indirizzo:</strong> {indirizzo}</p>
-                <p><strong>Telefono:</strong> {user}</p>
-
-                <hr>
-
-                <p style="font-size:12px; color:#888;">
-                    Sistema automatico WhatsApp - Cortonese Carni Srl
-                </p>
-
-            </div>
+        <p><b>Nome:</b> {nome}</p>
+        <p><b>Tipo:</b> {tipo}</p>
+        <p><b>Ordine:</b> {ordine}</p>
+        <p><b>Data:</b> {data}</p>
+        <p><b>Email:</b> {email}</p>
+        <p><b>Indirizzo:</b> {indirizzo}</p>
+        <p><b>Telefono:</b> {user}</p>
 
         </body>
         </html>
         """
 
         payload = {
-            "personalizations": [
-                {
-                    "to": [{"email": EMAIL_TO}]
-                }
-            ],
-            "from": {
-                "email": "ordinibot@gmail.com",
-                "name": "Cortonese Carni Ordini"
-            },
-            "subject": "🧾 Nuovo ordine ricevuto - Cortonese Carni",
-            "content": [
-                {
-                    "type": "text/html",
-                    "value": html_body
-                }
-            ]
+            "personalizations": [{"to": [{"email": EMAIL_TO}]}],
+            "from": {"email": "bot@cortonese.com", "name": "Bot Ordini"},
+            "subject": "Nuovo Ordine",
+            "content": [{"type": "text/html", "value": html_body}]
         }
 
-        response = requests.post(url, json=payload, headers=headers)
-
-        print("📩 STATUS:", response.status_code)
-        print("📩 RESPONSE:", response.text)
+        requests.post(url, json=payload, headers=headers)
 
     except Exception as e:
         print("EMAIL ERROR:", repr(e))
 
 
-# 📊 GOOGLE SHEETS SAVE
+# 📊 GOOGLE SHEETS SAVE (FIX DEFINITIVO)
 def save_to_sheet(user):
     try:
-        requests.post(GOOGLE_SHEET_URL, json={
+        r = requests.post(GOOGLE_SHEET_URL, json={
             "telefono": user,
             "nome": sessions[user].get("nome"),
             "tipo": sessions[user].get("tipo"),
@@ -125,11 +95,15 @@ def save_to_sheet(user):
             "email": sessions[user].get("email"),
             "indirizzo": sessions[user].get("indirizzo")
         })
+
+        print("SHEET STATUS:", r.status_code)
+        print("SHEET RESPONSE:", r.text)
+
     except Exception as e:
         print("SHEET ERROR:", repr(e))
 
 
-# 🔐 VERIFY WEBHOOK
+# 🔐 VERIFY
 @app.route("/webhook", methods=["GET"])
 def verify():
     mode = request.args.get("hub.mode")
@@ -142,7 +116,7 @@ def verify():
     return "Forbidden", 403
 
 
-# 📩 WEBHOOK PRINCIPALE
+# 📩 WEBHOOK
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
@@ -165,7 +139,7 @@ def webhook():
 
         step = sessions[user]["step"]
 
-        # 👋 START
+        # 👋 START (IDENTICO)
         if step == "start":
             send_message(
                 user,
@@ -181,10 +155,7 @@ def webhook():
 
         # 📦 CATALOGO
         if text == "catalogo":
-            send_message(
-                user,
-                "📦 Ecco il nostro catalogo completo:"
-            )
+            send_message(user, "📦 Ecco il nostro catalogo completo:")
             return "OK", 200
 
         # 🧾 ORDINE
@@ -206,42 +177,37 @@ def webhook():
             )
             return "OK", 200
 
-        # 🧾 NOME
+        # 🧾 FLUSSO (IDENTICO)
         if step == "nome":
             sessions[user]["nome"] = text
             send_message(user, "Ordini da parte di un' azienda o un privato?\n\n(scrivere il nome dell'azienda)")
             sessions[user]["step"] = "tipo"
             return "OK", 200
 
-        # 🧾 TIPO
         if step == "tipo":
             sessions[user]["tipo"] = text
             send_message(user, "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata\n (in un solo messaggio):")
             sessions[user]["step"] = "ordine"
             return "OK", 200
 
-        # 🧾 ORDINE
         if step == "ordine":
             sessions[user]["ordine"] = text
             send_message(user, "Scrivi la data in cui vorresti ricevere il tuo ordine")
             sessions[user]["step"] = "data"
             return "OK", 200
 
-        # 📅 DATA
         if step == "data":
             sessions[user]["data"] = text
             send_message(user, "Scrivi il tuo indirizzo email:")
             sessions[user]["step"] = "email"
             return "OK", 200
 
-        # 📧 EMAIL
         if step == "email":
             sessions[user]["email"] = text
             send_message(user, "Scrivi il tuo indirizzo di consegna:")
             sessions[user]["step"] = "indirizzo"
             return "OK", 200
 
-        # 📦 FINALE
         if step == "indirizzo":
             sessions[user]["indirizzo"] = text
 
