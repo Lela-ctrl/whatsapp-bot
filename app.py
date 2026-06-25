@@ -13,6 +13,9 @@ PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
 EMAIL_TO = os.environ.get("EMAIL_TO")
 SENDGRID_API_KEY = os.environ.get("SENDGRID_API_KEY")
 
+# 📊 GOOGLE SHEETS URL (INCOLLA QUI IL TUO SCRIPT URL)
+GOOGLE_SHEET_URL = "INCOLLA_QUI_URL_GOOGLE_SCRIPT"
+
 # 🧠 sessioni utenti
 sessions = {}
 
@@ -40,11 +43,25 @@ def send_message(to, text):
         print("WHATSAPP ERROR:", repr(e))
 
 
-# 📧 EMAIL (SENDGRID STABILE)
+# 📊 SALVA SU GOOGLE SHEETS
+def save_order(user):
+    try:
+        requests.post(GOOGLE_SHEET_URL, json={
+            "telefono": user,
+            "nome": sessions[user].get("nome"),
+            "tipo": sessions[user].get("tipo"),
+            "ordine": sessions[user].get("ordine"),
+            "data": sessions[user].get("data"),
+            "email": sessions[user].get("email"),
+            "indirizzo": sessions[user].get("indirizzo")
+        })
+    except Exception as e:
+        print("SHEET ERROR:", repr(e))
+
+
+# 📧 EMAIL
 def send_email(user, nome, tipo, ordine, data, email, indirizzo):
     try:
-        print("📧 INVIO EMAIL SENDGRID...")
-
         url = "https://api.sendgrid.com/v3/mail/send"
 
         headers = {
@@ -54,62 +71,33 @@ def send_email(user, nome, tipo, ordine, data, email, indirizzo):
 
         html_body = f"""
         <html>
-        <body style="font-family: Arial, sans-serif; background-color:#f6f6f6; padding:20px;">
+        <body>
 
-            <div style="max-width:600px; margin:auto; background:white; padding:20px; border-radius:10px;">
+        <h2>🧾 Nuovo Ordine Ricevuto</h2>
 
-                <h2 style="color:#2c3e50;">🧾 Nuovo Ordine Ricevuto</h2>
-
-                <hr>
-
-                <p><strong>Nome:</strong> {nome}</p>
-                <p><strong>Tipo cliente:</strong> {tipo}</p>
-                <p><strong>Ordine:</strong><br>{ordine}</p>
-                <p><strong>Data consegna:</strong> {data}</p>
-                <p><strong>Email:</strong> {email}</p>
-                <p><strong>Indirizzo:</strong> {indirizzo}</p>
-                <p><strong>Telefono:</strong> {user}</p>
-
-                <hr>
-
-                <p style="font-size:12px; color:#888;">
-                    Sistema automatico WhatsApp - Cortonese Carni Srl
-                </p>
-
-            </div>
+        <p><b>Nome:</b> {nome}</p>
+        <p><b>Tipo:</b> {tipo}</p>
+        <p><b>Ordine:</b> {ordine}</p>
+        <p><b>Data:</b> {data}</p>
+        <p><b>Email:</b> {email}</p>
+        <p><b>Indirizzo:</b> {indirizzo}</p>
+        <p><b>Telefono:</b> {user}</p>
 
         </body>
         </html>
         """
 
         payload = {
-            "personalizations": [
-                {
-                    "to": [{"email": EMAIL_TO}]
-                }
-            ],
+            "personalizations": [{"to": [{"email": EMAIL_TO}]}],
             "from": {
-                "email": "ordinibot@gmail.com",
-                "name": "Cortonese Carni Ordini"
+                "email": "bot@cortonese.com",
+                "name": "Cortonese Carni Bot"
             },
-            "subject": "🧾 Nuovo ordine ricevuto - Cortonese Carni",
-            "content": [
-                {
-                    "type": "text/html",
-                    "value": html_body
-                }
-            ]
+            "subject": "Nuovo Ordine",
+            "content": [{"type": "text/html", "value": html_body}]
         }
 
-        response = requests.post(url, json=payload, headers=headers)
-
-        print("📩 STATUS:", response.status_code)
-        print("📩 RESPONSE:", response.text)
-
-        if response.status_code in [200, 202]:
-            print("✅ EMAIL INVIATA")
-        else:
-            print("❌ ERRORE INVIO EMAIL")
+        requests.post(url, json=payload, headers=headers)
 
     except Exception as e:
         print("EMAIL ERROR:", repr(e))
@@ -135,7 +123,7 @@ def webhook():
         data = request.get_json()
 
         if not data:
-            return "No data", 400
+            return "OK", 200
 
         value = data["entry"][0]["changes"][0]["value"]
 
@@ -156,83 +144,73 @@ def webhook():
             send_message(
                 user,
                 "👋 Benvenuto in Cortonese Carni Srl!\n\n"
-                "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
-                "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n"
-                "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
-                "🧾 Scrivi ORDINE per effettuare un ordine\n\n"
-                "Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!."
+                "📦 Scrivi CATALOGO\n"
+                "🧾 Scrivi ORDINE\n"
+                "📞 Scrivi AIUTO"
             )
             sessions[user]["step"] = "menu"
             return "OK", 200
 
         # 📦 CATALOGO
         if text == "catalogo":
-            send_message(
-                user,
-                "📦 Ecco il nostro catalogo completo:"
-            )
+            send_message(user, "📦 Ecco il nostro catalogo completo")
             return "OK", 200
 
         # 🧾 ORDINE
         if text == "ordine":
-            send_message(user, "Perfetto 👍\n\nPer iniziare il tuo ordine, inserisci\nNome e Cognome:")
+            send_message(user, "Nome e Cognome:")
             sessions[user]["step"] = "nome"
-            return "OK", 200
-
-        # 🧾 NOME
-        if step == "nome":
-            sessions[user]["nome"] = text
-            send_message(user, "Ordini da parte di un' azienda o un privato?\n\n(scrivere il nome dell'azienda)")
-            sessions[user]["step"] = "tipo"
-            return "OK", 200
-
-        # 🧾 TIPO
-        if step == "tipo":
-            sessions[user]["tipo"] = text
-            send_message(user, "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata\n (in un solo messaggio):")
-            sessions[user]["step"] = "ordine"
-            return "OK", 200
-
-        # 🧾 ORDINE
-        if step == "ordine":
-            sessions[user]["ordine"] = text
-            send_message(user, "Scrivi la data in cui vorresti ricevere il tuo ordine")
-            sessions[user]["step"] = "data"
             return "OK", 200
 
         # 📞 AIUTO
         if text == "aiuto":
             send_message(
                 user,
-                "📞 Hai bisogno di assistenza?\n\n"
-                "Puoi contattare il nostro staff:\n"
-                "☎️ Manuele: +393289318272\n"
-                "📱 Andrea: +39338486433\n"
-                "📧 Email: info@cortonesecarni.it\n\n"
-                "Saremo felici di aiutarti!"
+                "📞 Assistenza:\n"
+                "☎️ 0575 XXXXXXX\n"
+                "📱 3XX XXXXXXX\n"
+                "📧 info@cortonesecarni.it"
             )
             return "OK", 200
 
-        # 📅 DATA
+        # 🧠 FLUSSO ORDINE
+        if step == "nome":
+            sessions[user]["nome"] = text
+            send_message(user, "Azienda o privato?")
+            sessions[user]["step"] = "tipo"
+            return "OK", 200
+
+        if step == "tipo":
+            sessions[user]["tipo"] = text
+            send_message(user, "Scrivi cosa vuoi ordinare")
+            sessions[user]["step"] = "ordine"
+            return "OK", 200
+
+        if step == "ordine":
+            sessions[user]["ordine"] = text
+            send_message(user, "Data consegna?")
+            sessions[user]["step"] = "data"
+            return "OK", 200
+
         if step == "data":
             sessions[user]["data"] = text
-            send_message(user, "Scrivi il tuo indirizzo email:")
+            send_message(user, "Email?")
             sessions[user]["step"] = "email"
             return "OK", 200
 
-        # 📧 EMAIL
         if step == "email":
             sessions[user]["email"] = text
-            send_message(user, "Scrivi il tuo indirizzo di consegna:")
+            send_message(user, "Indirizzo?")
             sessions[user]["step"] = "indirizzo"
             return "OK", 200
 
-        # 📦 FINALE
         if step == "indirizzo":
             sessions[user]["indirizzo"] = text
 
-            print("📦 ORDINE COMPLETO")
+            # 📊 salva ordine
+            save_order(user)
 
+            # 📧 email
             Thread(target=send_email, args=(
                 user,
                 sessions[user]["nome"],
@@ -243,10 +221,7 @@ def webhook():
                 sessions[user]["indirizzo"]
             )).start()
 
-            send_message(
-                user,
-                "✅ Ordine ricevuto!\n\nUn nostro operatore prenderà in carico la richiesta a breve.\n\nGrazie per aver scelto Cortonese Carni!"
-            )
+            send_message(user, "✅ Ordine ricevuto!")
 
             sessions[user] = {"step": "start"}
             return "OK", 200
@@ -257,7 +232,6 @@ def webhook():
     return "OK", 200
 
 
-# 🚀 RUN
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
