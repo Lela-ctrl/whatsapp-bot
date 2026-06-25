@@ -234,7 +234,17 @@ def webhook():
 
             sessions[user] = {"step": "start"}
 
-            return "OK", 200
+        if text == "aiuto":
+            send_message(
+                 user,
+                 "📞 Hai bisogno di assistenza?\n\n"
+                 "Puoi contattare il nostro staff:\n\n"
+                 "☎️ Manuele: +393289318272\n"
+                 "📱 Andrea: +393384816433 XXXXXXX\n"
+                 "📧 Email: info@cortonesecarni.it\n\n"
+                 "Saremo felici di aiutarti!"
+    )
+    return "OK", 200
 
     except Exception as e:
         print("WEBHOOK ERROR:", repr(e))
