@@ -200,6 +200,19 @@ def webhook():
             sessions[user]["step"] = "data"
             return "OK", 200
 
+        # 📞 AIUTO
+        if text == "aiuto":
+            send_message(
+                user,
+                "📞 Hai bisogno di assistenza?\n\n"
+                "Puoi contattare il nostro staff:\n"
+                "☎️ Ufficio: 0575 XXXXXXX\n"
+                "📱 WhatsApp: 3XX XXXXXXX\n"
+                "📧 Email: info@cortonesecarni.it\n\n"
+                "Saremo felici di aiutarti!"
+           )
+           return "OK", 200
+
         # 📅 DATA
         if step == "data":
             sessions[user]["data"] = text
@@ -233,17 +246,6 @@ def webhook():
             send_message(user, "✅ Ordine ricevuto!\n\nUn nostro operatore prenderà in carico la richiesta a breve.\n\nGrazie per aver scelto Cortonese Carni!")
 
             sessions[user] = {"step": "start"}
-
-        if text == "aiuto":
-            send_message(
-                 user,
-                 "📞 Hai bisogno di assistenza?\n\n"
-                 "Puoi contattare il nostro staff:\n\n"
-                 "☎️ Manuele: +393289318272\n"
-                 "📱 Andrea: +393384816433 XXXXXXX\n"
-                 "📧 Email: info@cortonesecarni.it\n\n"
-                 "Saremo felici di aiutarti!"
-    )
     return "OK", 200
 
     except Exception as e:
