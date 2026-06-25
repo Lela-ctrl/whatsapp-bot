@@ -206,12 +206,12 @@ def webhook():
                 user,
                 "📞 Hai bisogno di assistenza?\n\n"
                 "Puoi contattare il nostro staff:\n"
-                "☎️ Ufficio: 0575 XXXXXXX\n"
-                "📱 WhatsApp: 3XX XXXXXXX\n"
+                "☎️ Manuele: +393289318272\n"
+                "📱 Andrea: +39338486433\n"
                 "📧 Email: info@cortonesecarni.it\n\n"
                 "Saremo felici di aiutarti!"
-           )
-           return "OK", 200
+            )
+            return "OK", 200
 
         # 📅 DATA
         if step == "data":
@@ -243,10 +243,13 @@ def webhook():
                 sessions[user]["indirizzo"]
             )).start()
 
-            send_message(user, "✅ Ordine ricevuto!\n\nUn nostro operatore prenderà in carico la richiesta a breve.\n\nGrazie per aver scelto Cortonese Carni!")
+            send_message(
+                user,
+                "✅ Ordine ricevuto!\n\nUn nostro operatore prenderà in carico la richiesta a breve.\n\nGrazie per aver scelto Cortonese Carni!"
+            )
 
             sessions[user] = {"step": "start"}
-    return "OK", 200
+            return "OK", 200
 
     except Exception as e:
         print("WEBHOOK ERROR:", repr(e))
