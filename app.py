@@ -191,22 +191,15 @@ def webhook():
         # -----------------------
 
         if text in info_dove_siamo:
-            send_message(
-                user,
-                "📍 ecco! ci troviamo proprio qui:\n https://maps.app.goo.gl/zexK43XE7fKiMxwe7"
-            )
+            send_message(user, "📍 ecco! ci troviamo proprio qui:\n https://maps.app.goo.gl/zexK43XE7fKiMxwe7")
             return "OK", 200
 
         if text in info_orari:
-            send_message(
-                user,
-                "🕒 Siamo a vostra disposizione dal Lunedì al Venerdì con orari:\n 8:00-13:00 e 14:00-18:00"
-            )
+            send_message(user, "🕒 Siamo a vostra disposizione dal Lunedì al Venerdì con orari:\n 8:00-13:00 e 14:00-18:00")
             return "OK", 200
 
         if text in info_aiuto:
-            send_message(
-                user,
+            send_message(user,
                 "☎️ Contatta il nostro staff\n\n"
                 "Per assistenza puoi contattarci ai seguenti recapiti:\n\n"
                 "📞 Manuele +39 328 931 8272\n\n"
@@ -221,8 +214,6 @@ def webhook():
         # -----------------------
 
         if text == "ordine" or text in riordino:
-
-            cliente = cerca_cliente(user)
 
             sessions[user] = {"step": "confirm_data"}
 
@@ -253,7 +244,7 @@ def webhook():
             return "OK", 200
 
         # -----------------------
-        # CONFERMA DATI (RIORDINO VELOCE)
+        # CONFERMA DATI (RIORDINO FIX)
         # -----------------------
 
         step = sessions.get(user, {}).get("step")
@@ -266,24 +257,18 @@ def webhook():
 
                 sessions[user]["nome"] = cliente["nome"]
                 sessions[user]["tipo"] = cliente["tipo"]
-                sessions[user]["email"] = cliente["email"]
-                sessions[user]["indirizzo"] = cliente["indirizzo"]
 
+                # 🔥 SOLO FLUSSO RIDOTTO
+                sessions[user]["fast_order"] = True
                 sessions[user]["step"] = "ordine"
 
-                send_message(
-                    user,
-                    "Perfetto 👍\n\nCosa vuoi ordinare oggi?"
-                )
+                send_message(user, "Perfetto 👍\n\nCosa vuoi ordinare oggi?")
                 return "OK", 200
 
             if text == "no":
                 sessions[user]["step"] = "nome"
 
-                send_message(
-                    user,
-                    "Perfetto 👍\n\nInserisci Nome e Cognome:"
-                )
+                send_message(user, "Perfetto 👍\n\nInserisci Nome e Cognome:")
                 return "OK", 200
 
         # -----------------------
@@ -304,15 +289,45 @@ def webhook():
 
         if step == "ordine":
             sessions[user]["ordine"] = text
-            send_message(user, "Scrivi la data in cui vorresti ricevere il tuo ordine")
-            sessions[user]["step"] = "data"
+
+            if sessions[user].get("fast_order"):
+                sessions[user]["step"] = "data"
+                send_message(user, "Scrivi la data in cui vorresti ricevere il tuo ordine")
+            else:
+                sessions[user]["step"] = "data"
+                send_message(user, "Scrivi la data in cui vorresti ricevere il tuo ordine")
+
             return "OK", 200
 
         if step == "data":
+
             sessions[user]["data"] = text
-            send_message(user, "Scrivi il tuo indirizzo email:")
-            sessions[user]["step"] = "email"
-            return "OK", 200
+
+            # 🔥 SE RIORDINO → CHIUSURA SUBITO
+            if sessions[user].get("fast_order"):
+
+                Thread(target=send_email, args=(
+                    user,
+                    sessions[user]["nome"],
+                    sessions[user]["tipo"],
+                    sessions[user]["ordine"],
+                    sessions[user]["data"],
+                    sessions[user]["email"],
+                    sessions[user]["indirizzo"]
+                )).start()
+
+                send_message(
+                    user,
+                    "✅ Ordine ricevuto!\n\nUn nostro operatore prenderà in carico la richiesta a breve.\n\nGrazie per aver scelto Cortonese Carni!"
+                )
+
+                sessions[user] = {"step": "menu"}
+                return "OK", 200
+
+            else:
+                send_message(user, "Scrivi il tuo indirizzo email:")
+                sessions[user]["step"] = "email"
+                return "OK", 200
 
         if step == "email":
             sessions[user]["email"] = text
@@ -348,7 +363,6 @@ def webhook():
             )
 
             sessions[user] = {"step": "menu"}
-
             return "OK", 200
 
         return "OK", 200
