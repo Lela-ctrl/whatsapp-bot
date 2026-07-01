@@ -22,8 +22,14 @@ supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 sessions = {}
 
 # -----------------------
-# SUPABASE
+# UTILS
 # -----------------------
+
+saluti = ["ciao", "buongiorno", "buonasera", "salve", "hello"]
+info_dove_siamo = ["dove siamo", "dove siete", "posizione"]
+info_orari = ["orari", "apertura", "quando siete aperti"]
+info_aiuto = ["aiuto", "help", "operatore", "assistenza"]
+riordino = ["voglio riordinare", "riordina", "ordine di nuovo", "ciao voglio riordinare"]
 
 def cerca_cliente(telefono):
     try:
@@ -49,10 +55,6 @@ def salva_cliente(telefono, nome, tipo, email, indirizzo):
         print("SUPABASE SAVE ERROR:", repr(e))
 
 
-# -----------------------
-# WHATSAPP
-# -----------------------
-
 def send_message(to, text):
     try:
         url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
@@ -70,10 +72,6 @@ def send_message(to, text):
     except Exception as e:
         print("WHATSAPP ERROR:", repr(e))
 
-
-# -----------------------
-# EMAIL
-# -----------------------
 
 def send_email(user, nome, tipo, ordine, data, email, indirizzo):
     try:
@@ -117,7 +115,7 @@ def send_email(user, nome, tipo, ordine, data, email, indirizzo):
 
 
 # -----------------------
-# VERIFY WEBHOOK
+# WEBHOOK
 # -----------------------
 
 @app.route("/webhook", methods=["GET"])
@@ -130,10 +128,6 @@ def verify():
         return challenge, 200
     return "Forbidden", 403
 
-
-# -----------------------
-# WEBHOOK PRINCIPALE
-# -----------------------
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -153,77 +147,125 @@ def webhook():
         cliente = cerca_cliente(user)
 
         # -----------------------
-        # PRIMO ACCESSO
+        # SALUTI SEMPRE ATTIVI
         # -----------------------
 
-        if user not in sessions:
+        if text in saluti:
+
             sessions[user] = {"step": "menu"}
+
+            if cliente:
+                send_message(
+                    user,
+                    f"👋 Bentornato in Cortonese Carni Srl {cliente['nome']}!\n\n"
+                    "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
+                    "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n\n"
+                    "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
+                    "🧾 Scrivi ORDINE per effettuare un ordine\n"
+                    "📍 Dove siamo\n"
+                    "🕒 Orari\n"
+                    "☎️ Aiuto\n\n"
+                    "Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!."
+                )
+            else:
+                send_message(
+                    user,
+                    "👋 Benvenuto in Cortonese Carni Srl!\n\n"
+                    "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
+                    "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n\n"
+                    "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
+                    "🧾 Scrivi ORDINE per effettuare un ordine\n"
+                    "📍 Dove siamo\n"
+                    "🕒 Orari\n"
+                    "☎️ Aiuto\n\n"
+                    "Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!."
+                )
+
+            return "OK", 200
+
+        # -----------------------
+        # INFO
+        # -----------------------
+
+        if text in info_dove_siamo:
+            send_message(
+                user,
+                "📍 ecco! Ci troviamo proprio qui!\n https://maps.app.goo.gl/zexK43XE7fKiMxwe7"
+            )
+            return "OK", 200
+
+        if text in info_orari:
+            send_message(
+                user,
+                "🕒 Siamo a vostra disposizione dal Lunedì al Venerdì con orari:\n 8:00/13:00 14:00/18:00"
+            )
+            return "OK", 200
+
+        if text in info_aiuto:
+            send_message(
+                user,
+                "☎️ Contatta il nostro staff\n\n"
+                "Per assistenza puoi contattarci ai seguenti recapiti:\n\n"
+                "📞 Manuele +39 328 931 8272\n\n"
+                "📱 Andrea +39 338 481 6433\n\n"
+                "📧 info@cortonesecarni.it\n\n"
+                "Saremo felici di aiutarti!."
+            )
+            return "OK", 200
+
+        # -----------------------
+        # ORDINE / RIORDINO
+        # -----------------------
+
+        if text == "ordine" or text in riordino:
+
+            cliente = cerca_cliente(user)
+
+            sessions[user] = {"step": "confirm_data"}
 
             if cliente:
                 sessions[user]["cliente"] = cliente
 
                 send_message(
                     user,
-                    f"👋 Bentornato {cliente['nome']}!\n\n"
-                    "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
-                    "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n"
-                    "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
-                    "🧾 Scrivi ORDINE per effettuare un ordine\n\n"
-                    "Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!."
+                    f"👋 Bentornato in Cortonese Carni Srl {cliente['nome']}!\n\n"
+                    "Questi sono i tuoi dati:\n\n"
+                    f"🏢 Tipo: {cliente['tipo']}\n"
+                    f"📧 Email: {cliente['email']}\n"
+                    f"📍 Indirizzo: {cliente['indirizzo']}\n\n"
+                    "Vuoi riutilizzare questi dati?\n\n"
+                    "✔ Scrivi SI\n"
+                    "❌ Scrivi NO"
                 )
-                sessions[user]["step"] = "menu"
 
             else:
+                sessions[user] = {"step": "nome"}
+
                 send_message(
                     user,
                     "👋 Benvenuto in Cortonese Carni Srl!\n\n"
-                    "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
-                    "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n"
-                    "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
-                    "🧾 Scrivi ORDINE per effettuare un ordine\n\n"
-                    "Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!."
+                    "Perfetto 👍\n\nInserisci Nome e Cognome:"
                 )
-                sessions[user]["step"] = "menu"
 
-        step = sessions[user]["step"]
-
-        # -----------------------
-        # AIUTO (INVARIATO)
-        # -----------------------
-
-        if text in ["aiuto", "help", "operatore", "assistenza"]:
-            send_message(
-                user,
-                "☎️ Contatta il nostro staff\n\n"
-                "📞 0575 XXXXXXX\n"
-                "📱 333 XXXXXXX\n\n"
-                "🕒 Lun-Ven 08:00 - 13:00 / 14:00 - 18:00"
-            )
             return "OK", 200
 
         # -----------------------
-        # CATALOGO
+        # CONFERMA DATI
         # -----------------------
 
-        if text == "catalogo":
-            send_message(
-                user,
-                "📦 Ecco il nostro catalogo completo:\n\n"
-                "https://drive.google.com/file/d/1wqqPoIYDuPtxxNvFeZJFk8FzmvM7WiQm/view?usp=sharing"
-            )
-            return "OK", 200
+        step = sessions.get(user, {}).get("step")
 
-        # -----------------------
-        # ORDINE
-        # -----------------------
+        if step == "confirm_data":
 
-        if text == "ordine":
-            send_message(
-                user,
-                "Perfetto 👍\n\nPer iniziare il tuo ordine, inserisci\nNome e Cognome:"
-            )
-            sessions[user]["step"] = "nome"
-            return "OK", 200
+            if text == "si":
+                send_message(user, "Perfetto 👍\n\nCosa vuoi ordinare oggi?")
+                sessions[user]["step"] = "ordine"
+                return "OK", 200
+
+            if text == "no":
+                sessions[user]["step"] = "nome"
+                send_message(user, "Perfetto 👍\n\nInserisci Nome e Cognome:")
+                return "OK", 200
 
         # -----------------------
         # FLUSSO ORDINE
@@ -231,19 +273,13 @@ def webhook():
 
         if step == "nome":
             sessions[user]["nome"] = text
-            send_message(
-                user,
-                "Ordini da parte di un' azienda o un privato?\n\n(scrivere il nome dell'azienda)"
-            )
+            send_message(user, "Ordini da parte di un' azienda o un privato?\n\n(scrivere il nome dell'azienda)")
             sessions[user]["step"] = "tipo"
             return "OK", 200
 
         if step == "tipo":
             sessions[user]["tipo"] = text
-            send_message(
-                user,
-                "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata\n (in un solo messaggio):"
-            )
+            send_message(user, "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata\n (in un solo messaggio):")
             sessions[user]["step"] = "ordine"
             return "OK", 200
 
