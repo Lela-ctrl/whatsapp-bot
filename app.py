@@ -26,9 +26,11 @@ sessions = {}
 # -----------------------
 
 saluti = ["ciao", "buongiorno", "buonasera", "salve", "hello"]
+
 info_dove_siamo = ["dove siamo", "dove siete", "posizione"]
 info_orari = ["orari", "apertura", "quando siete aperti"]
 info_aiuto = ["aiuto", "help", "operatore", "assistenza"]
+
 riordino = ["voglio riordinare", "riordina", "ordine di nuovo", "ciao voglio riordinare"]
 
 def cerca_cliente(telefono):
@@ -147,11 +149,10 @@ def webhook():
         cliente = cerca_cliente(user)
 
         # -----------------------
-        # SALUTI SEMPRE ATTIVI
+        # SALUTI
         # -----------------------
 
         if text in saluti:
-
             sessions[user] = {"step": "menu"}
 
             if cliente:
@@ -160,8 +161,9 @@ def webhook():
                     f"👋 Bentornato in Cortonese Carni Srl {cliente['nome']}!\n\n"
                     "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
                     "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n\n"
-                    "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
-                    "🧾 Scrivi ORDINE per effettuare un ordine\n"
+                    "Scrivi in chat il servizio desiderato:"\n
+                    "📦 Catalogo\n"
+                    "🧾 Ordine\n"
                     "📍 Dove siamo\n"
                     "🕒 Orari\n"
                     "☎️ Aiuto\n\n"
@@ -173,8 +175,9 @@ def webhook():
                     "👋 Benvenuto in Cortonese Carni Srl!\n\n"
                     "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
                     "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n\n"
-                    "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
-                    "🧾 Scrivi ORDINE per effettuare un ordine\n"
+                    "Scrivi in chat il servizio desiderato:"\n
+                    "📦 Catalogo\n"
+                    "🧾 Ordine\n"
                     "📍 Dove siamo\n"
                     "🕒 Orari\n"
                     "☎️ Aiuto\n\n"
@@ -190,14 +193,14 @@ def webhook():
         if text in info_dove_siamo:
             send_message(
                 user,
-                "📍 ecco! Ci troviamo proprio qui!\n https://maps.app.goo.gl/zexK43XE7fKiMxwe7"
+                "📍 ecco! ci troviamo proprio qui:\n https://maps.app.goo.gl/zexK43XE7fKiMxwe7"
             )
             return "OK", 200
 
         if text in info_orari:
             send_message(
                 user,
-                "🕒 Siamo a vostra disposizione dal Lunedì al Venerdì con orari:\n 8:00/13:00 14:00/18:00"
+                "🕒 Siamo a vostra disposizione dal Lunedì al Venerdì con orari:\n 8:00-13:00 e 14:00-18:00"
             )
             return "OK", 200
 
@@ -209,7 +212,7 @@ def webhook():
                 "📞 Manuele +39 328 931 8272\n\n"
                 "📱 Andrea +39 338 481 6433\n\n"
                 "📧 info@cortonesecarni.it\n\n"
-                "Saremo felici di aiutarti!."
+                "Saremo felici di aiutarti.!"
             )
             return "OK", 200
 
@@ -250,7 +253,7 @@ def webhook():
             return "OK", 200
 
         # -----------------------
-        # CONFERMA DATI
+        # CONFERMA DATI (RIORDINO VELOCE)
         # -----------------------
 
         step = sessions.get(user, {}).get("step")
@@ -258,13 +261,29 @@ def webhook():
         if step == "confirm_data":
 
             if text == "si":
-                send_message(user, "Perfetto 👍\n\nCosa vuoi ordinare oggi?")
+
+                cliente = sessions[user]["cliente"]
+
+                sessions[user]["nome"] = cliente["nome"]
+                sessions[user]["tipo"] = cliente["tipo"]
+                sessions[user]["email"] = cliente["email"]
+                sessions[user]["indirizzo"] = cliente["indirizzo"]
+
                 sessions[user]["step"] = "ordine"
+
+                send_message(
+                    user,
+                    "Perfetto 👍\n\nCosa vuoi ordinare oggi?"
+                )
                 return "OK", 200
 
             if text == "no":
                 sessions[user]["step"] = "nome"
-                send_message(user, "Perfetto 👍\n\nInserisci Nome e Cognome:")
+
+                send_message(
+                    user,
+                    "Perfetto 👍\n\nInserisci Nome e Cognome:"
+                )
                 return "OK", 200
 
         # -----------------------
