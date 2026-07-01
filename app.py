@@ -92,8 +92,6 @@ def send_email(user, nome, tipo, ordine, data, email, indirizzo):
         <p><strong>Tipo:</strong> {tipo}</p>
         <p><strong>Ordine:</strong><br>{ordine}</p>
         <p><strong>Data:</strong> {data}</p>
-        <p><strong>Email:</strong> {email}</p>
-        <p><strong>Indirizzo:</strong> {indirizzo}</p>
         <p><strong>Telefono:</strong> {user}</p>
 
         </body>
@@ -101,7 +99,7 @@ def send_email(user, nome, tipo, ordine, data, email, indirizzo):
         """
 
         payload = {
-            "personalizations": [{"to": [{"email": EMAIL_TO}]}],
+            "personalizations": [{"to": [{"email": EMAIL_TO}]}],  # 📩 SEMPRE AZIENDA
             "from": {
                 "email": "ordinibot@gmail.com",
                 "name": "Cortonese Carni"
@@ -159,9 +157,8 @@ def webhook():
                 send_message(
                     user,
                     f"👋 Bentornato in Cortonese Carni Srl {cliente['nome']}!\n\n"
-                    "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
-                    "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n\n"
-                    "Scrivi in chat il servizio desiderato:\n"
+                    "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n\n"
+                    "Scrivi in chat:\n"
                     "📦 Catalogo\n"
                     "🧾 Ordine\n"
                     "📍 Dove siamo\n"
@@ -173,9 +170,8 @@ def webhook():
                 send_message(
                     user,
                     "👋 Benvenuto in Cortonese Carni Srl!\n\n"
-                    "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
-                    "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n\n"
-                    "Scrivi in chat il servizio desiderato:\n"
+                    "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n\n"
+                    "Scrivi in chat:\n"
                     "📦 Catalogo\n"
                     "🧾 Ordine\n"
                     "📍 Dove siamo\n"
@@ -201,11 +197,10 @@ def webhook():
         if text in info_aiuto:
             send_message(user,
                 "☎️ Contatta il nostro staff\n\n"
-                "Per assistenza puoi contattarci ai seguenti recapiti:\n\n"
-                "📞 Manuele +39 328 931 8272\n\n"
-                "📱 Andrea +39 338 481 6433\n\n"
+                "📞 Manuele +39 328 931 8272\n"
+                "📱 Andrea +39 338 481 6433\n"
                 "📧 info@cortonesecarni.it\n\n"
-                "Saremo felici di aiutarti.!"
+                "Saremo felici di aiutarti!"
             )
             return "OK", 200
 
@@ -244,7 +239,7 @@ def webhook():
             return "OK", 200
 
         # -----------------------
-        # CONFERMA DATI (RIORDINO FIX)
+        # CONFERMA DATI
         # -----------------------
 
         step = sessions.get(user, {}).get("step")
@@ -257,9 +252,9 @@ def webhook():
 
                 sessions[user]["nome"] = cliente["nome"]
                 sessions[user]["tipo"] = cliente["tipo"]
+                sessions[user]["email"] = cliente["email"]
+                sessions[user]["indirizzo"] = cliente["indirizzo"]
 
-                # 🔥 SOLO FLUSSO RIDOTTO
-                sessions[user]["fast_order"] = True
                 sessions[user]["step"] = "ordine"
 
                 send_message(user, "Perfetto 👍\n\nCosa vuoi ordinare oggi?")
@@ -267,7 +262,6 @@ def webhook():
 
             if text == "no":
                 sessions[user]["step"] = "nome"
-
                 send_message(user, "Perfetto 👍\n\nInserisci Nome e Cognome:")
                 return "OK", 200
 
@@ -289,55 +283,13 @@ def webhook():
 
         if step == "ordine":
             sessions[user]["ordine"] = text
-
-            if sessions[user].get("fast_order"):
-                sessions[user]["step"] = "data"
-                send_message(user, "Scrivi la data in cui vorresti ricevere il tuo ordine")
-            else:
-                sessions[user]["step"] = "data"
-                send_message(user, "Scrivi la data in cui vorresti ricevere il tuo ordine")
-
+            send_message(user, "Scrivi la data in cui vorresti ricevere il tuo ordine")
+            sessions[user]["step"] = "data"
             return "OK", 200
 
         if step == "data":
 
             sessions[user]["data"] = text
-
-            # 🔥 SE RIORDINO → CHIUSURA SUBITO
-            if sessions[user].get("fast_order"):
-
-                Thread(target=send_email, args=(
-                    user,
-                    sessions[user]["nome"],
-                    sessions[user]["tipo"],
-                    sessions[user]["ordine"],
-                    sessions[user]["data"],
-                    sessions[user]["email"],
-                    sessions[user]["indirizzo"]
-                )).start()
-
-                send_message(
-                    user,
-                    "✅ Ordine ricevuto!\n\nUn nostro operatore prenderà in carico la richiesta a breve.\n\nGrazie per aver scelto Cortonese Carni!"
-                )
-
-                sessions[user] = {"step": "menu"}
-                return "OK", 200
-
-            else:
-                send_message(user, "Scrivi il tuo indirizzo email:")
-                sessions[user]["step"] = "email"
-                return "OK", 200
-
-        if step == "email":
-            sessions[user]["email"] = text
-            send_message(user, "Scrivi il tuo indirizzo di consegna:")
-            sessions[user]["step"] = "indirizzo"
-            return "OK", 200
-
-        if step == "indirizzo":
-
-            sessions[user]["indirizzo"] = text
 
             Thread(target=send_email, args=(
                 user,
@@ -345,16 +297,16 @@ def webhook():
                 sessions[user]["tipo"],
                 sessions[user]["ordine"],
                 sessions[user]["data"],
-                sessions[user]["email"],
-                sessions[user]["indirizzo"]
+                EMAIL_TO,   # 📩 sempre azienda
+                ""
             )).start()
 
             salva_cliente(
                 user,
                 sessions[user]["nome"],
                 sessions[user]["tipo"],
-                sessions[user]["email"],
-                sessions[user]["indirizzo"]
+                EMAIL_TO,
+                ""
             )
 
             send_message(
