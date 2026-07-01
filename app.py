@@ -161,7 +161,7 @@ def webhook():
                     f"👋 Bentornato in Cortonese Carni Srl {cliente['nome']}!\n\n"
                     "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
                     "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n\n"
-                    "Scrivi in chat il servizio desiderato:"\n
+                    "Scrivi in chat il servizio desiderato:\n"
                     "📦 Catalogo\n"
                     "🧾 Ordine\n"
                     "📍 Dove siamo\n"
@@ -175,7 +175,7 @@ def webhook():
                     "👋 Benvenuto in Cortonese Carni Srl!\n\n"
                     "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
                     "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n\n"
-                    "Scrivi in chat il servizio desiderato:"\n
+                    "Scrivi in chat il servizio desiderato:\n"
                     "📦 Catalogo\n"
                     "🧾 Ordine\n"
                     "📍 Dove siamo\n"
