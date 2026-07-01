@@ -164,31 +164,31 @@ def webhook():
 
                 send_message(
                     user,
-                    f"""👋 Bentornato {cliente['nome']}!
-
-Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.
-Le richieste vengono prese in carico dal nostro staff entro pochi minuti.
-
-📦 Scrivi CATALOGO per visualizzare i nostri prodotti
-🧾 Scrivi ORDINE per effettuare un ordine
-☎️ Scrivi AIUTO per contattare un operatore
-
-Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!"""
+                    f"👋 Bentornato {cliente['nome']}!\n\n"
+                    "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
+                    "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n"
+                    "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
+                    "🧾 Scrivi ORDINE per effettuare un ordine\n\n"
+                    "Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!."
                 )
+                sessions[user]["step"] = "menu"
 
             else:
                 send_message(
                     user,
                     "👋 Benvenuto in Cortonese Carni Srl!\n\n"
-                    "📦 Scrivi CATALOGO\n"
-                    "🧾 Scrivi ORDINE\n"
-                    "☎️ Scrivi AIUTO"
+                    "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
+                    "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n"
+                    "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
+                    "🧾 Scrivi ORDINE per effettuare un ordine\n\n"
+                    "Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!."
                 )
+                sessions[user]["step"] = "menu"
 
         step = sessions[user]["step"]
 
         # -----------------------
-        # AIUTO
+        # AIUTO (INVARIATO)
         # -----------------------
 
         if text in ["aiuto", "help", "operatore", "assistenza"]:
@@ -214,76 +214,15 @@ Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!"""
             return "OK", 200
 
         # -----------------------
-        # ORDINE + LOGICA NUOVA
+        # ORDINE
         # -----------------------
 
         if text == "ordine":
-
-            if cliente:
-                sessions[user]["step"] = "confirm_data"
-                sessions[user]["cliente"] = cliente
-
-                send_message(
-                    user,
-                    f"""👋 Bentornato {cliente['nome']}!
-
-Questi sono i tuoi dati:
-
-🏢 Tipo: {cliente['tipo']}
-📧 Email: {cliente['email']}
-📍 Indirizzo: {cliente['indirizzo']}
-
-Vuoi riutilizzare questi dati?
-
-✔ Scrivi SI
-❌ Scrivi NO"""
-                )
-
-            else:
-                send_message(
-                    user,
-                    "Perfetto 👍\n\nPer iniziare il tuo ordine, inserisci\nNome e Cognome:"
-                )
-                sessions[user]["step"] = "nome"
-
-            return "OK", 200
-
-        # -----------------------
-        # CONFERMA DATI
-        # -----------------------
-
-        if step == "confirm_data":
-
-            if text == "si":
-                send_message(
-                    user,
-                    "Perfetto 👍\n\nScrivi cosa vuoi ordinare:"
-                )
-                sessions[user]["step"] = "ordine"
-                return "OK", 200
-
-            if text == "no":
-                send_message(
-                    user,
-                    "Ok 👍\nScrivi la tua email:"
-                )
-                sessions[user]["step"] = "email_update"
-                return "OK", 200
-
-        # -----------------------
-        # UPDATE EMAIL / INDIRIZZO
-        # -----------------------
-
-        if step == "email_update":
-            sessions[user]["email"] = text
-            send_message(user, "Perfetto 👍 ora scrivi il tuo indirizzo:")
-            sessions[user]["step"] = "indirizzo_update"
-            return "OK", 200
-
-        if step == "indirizzo_update":
-            sessions[user]["indirizzo"] = text
-            send_message(user, "Perfetto 👍 ora scrivi cosa vuoi ordinare:")
-            sessions[user]["step"] = "ordine"
+            send_message(
+                user,
+                "Perfetto 👍\n\nPer iniziare il tuo ordine, inserisci\nNome e Cognome:"
+            )
+            sessions[user]["step"] = "nome"
             return "OK", 200
 
         # -----------------------
@@ -292,13 +231,19 @@ Vuoi riutilizzare questi dati?
 
         if step == "nome":
             sessions[user]["nome"] = text
-            send_message(user, "Ordini da parte di un' azienda o un privato?\n\n(scrivere il nome dell'azienda)")
+            send_message(
+                user,
+                "Ordini da parte di un' azienda o un privato?\n\n(scrivere il nome dell'azienda)"
+            )
             sessions[user]["step"] = "tipo"
             return "OK", 200
 
         if step == "tipo":
             sessions[user]["tipo"] = text
-            send_message(user, "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata\n (in un solo messaggio):")
+            send_message(
+                user,
+                "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata\n (in un solo messaggio):"
+            )
             sessions[user]["step"] = "ordine"
             return "OK", 200
 
@@ -319,10 +264,6 @@ Vuoi riutilizzare questi dati?
             send_message(user, "Scrivi il tuo indirizzo di consegna:")
             sessions[user]["step"] = "indirizzo"
             return "OK", 200
-
-        # -----------------------
-        # FINALE
-        # -----------------------
 
         if step == "indirizzo":
 
