@@ -6,7 +6,7 @@ from supabase import create_client
 
 app = Flask(__name__)
 
-# 🔐 ENV VARIABLES (Render)
+# 🔐 ENV VARIABLES
 VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN")
 ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN")
 PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID")
@@ -18,31 +18,24 @@ SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-# 🧠 sessioni utenti
+# 🧠 sessioni
 sessions = {}
 
-# 📥 SUPABASE: cerca cliente
+# -----------------------
+# SUPABASE
+# -----------------------
+
 def cerca_cliente(telefono):
     try:
-        res = (
-            supabase
-            .table("clienti")
-            .select("*")
-            .eq("telefono", telefono)
-            .execute()
-        )
-
+        res = supabase.table("clienti").select("*").eq("telefono", telefono).execute()
         if res.data:
             return res.data[0]
-
         return None
-
     except Exception as e:
         print("SUPABASE ERROR:", repr(e))
         return None
 
 
-# 💾 SUPABASE: salva cliente
 def salva_cliente(telefono, nome, tipo, email, indirizzo):
     try:
         supabase.table("clienti").upsert({
@@ -52,12 +45,14 @@ def salva_cliente(telefono, nome, tipo, email, indirizzo):
             "email": email,
             "indirizzo": indirizzo
         }).execute()
-
     except Exception as e:
         print("SUPABASE SAVE ERROR:", repr(e))
 
 
-# 📩 WHATSAPP SEND
+# -----------------------
+# WHATSAPP
+# -----------------------
+
 def send_message(to, text):
     try:
         url = f"https://graph.facebook.com/v18.0/{PHONE_NUMBER_ID}/messages"
@@ -72,15 +67,16 @@ def send_message(to, text):
             "text": {"body": text}
         }
         requests.post(url, headers=headers, json=payload)
-
     except Exception as e:
         print("WHATSAPP ERROR:", repr(e))
 
 
-# 📧 EMAIL (SENDGRID STABILE)
+# -----------------------
+# EMAIL
+# -----------------------
+
 def send_email(user, nome, tipo, ordine, data, email, indirizzo):
     try:
-        print("📧 INVIO EMAIL SENDGRID...")
         url = "https://api.sendgrid.com/v3/mail/send"
         headers = {
             "Authorization": f"Bearer {SENDGRID_API_KEY}",
@@ -89,50 +85,41 @@ def send_email(user, nome, tipo, ordine, data, email, indirizzo):
 
         html_body = f"""
         <html>
-        <body style="font-family: Arial, sans-serif; background-color:#f6f6f6; padding:20px;">
-        <div style="max-width:600px; margin:auto; background:white; padding:20px; border-radius:10px;">
-            <h2 style="color:#2c3e50;">🧾 Nuovo Ordine Ricevuto</h2>
-            <hr>
-            <p><strong>Nome:</strong> {nome}</p>
-            <p><strong>Tipo cliente:</strong> {tipo}</p>
-            <p><strong>Ordine:</strong><br>{ordine}</p>
-            <p><strong>Data consegna:</strong> {data}</p>
-            <p><strong>Email:</strong> {email}</p>
-            <p><strong>Indirizzo:</strong> {indirizzo}</p>
-            <p><strong>Telefono:</strong> {user}</p>
-            <hr>
-            <p style="font-size:12px; color:#888;">
-                Sistema automatico WhatsApp - Cortonese Carni Srl
-            </p>
-        </div>
+        <body style="font-family: Arial; padding:20px;">
+        <h2>🧾 Nuovo Ordine Ricevuto</h2>
+
+        <p><strong>Nome:</strong> {nome}</p>
+        <p><strong>Tipo:</strong> {tipo}</p>
+        <p><strong>Ordine:</strong><br>{ordine}</p>
+        <p><strong>Data:</strong> {data}</p>
+        <p><strong>Email:</strong> {email}</p>
+        <p><strong>Indirizzo:</strong> {indirizzo}</p>
+        <p><strong>Telefono:</strong> {user}</p>
+
         </body>
         </html>
         """
 
         payload = {
-            "personalizations": [
-                {"to": [{"email": EMAIL_TO}]}
-            ],
+            "personalizations": [{"to": [{"email": EMAIL_TO}]}],
             "from": {
                 "email": "ordinibot@gmail.com",
-                "name": "Cortonese Carni Ordini"
+                "name": "Cortonese Carni"
             },
-            "subject": "🧾 Nuovo ordine ricevuto - Cortonese Carni",
-            "content": [
-                {"type": "text/html", "value": html_body}
-            ]
+            "subject": "Nuovo Ordine",
+            "content": [{"type": "text/html", "value": html_body}]
         }
 
-        response = requests.post(url, json=payload, headers=headers)
-
-        print("📩 STATUS:", response.status_code)
-        print("📩 RESPONSE:", response.text)
+        requests.post(url, json=payload, headers=headers)
 
     except Exception as e:
         print("EMAIL ERROR:", repr(e))
 
 
-# 🔐 VERIFY WEBHOOK
+# -----------------------
+# VERIFY WEBHOOK
+# -----------------------
+
 @app.route("/webhook", methods=["GET"])
 def verify():
     mode = request.args.get("hub.mode")
@@ -141,112 +128,205 @@ def verify():
 
     if mode == "subscribe" and token == VERIFY_TOKEN:
         return challenge, 200
-
     return "Forbidden", 403
 
 
-# 📩 WEBHOOK PRINCIPALE
+# -----------------------
+# WEBHOOK PRINCIPALE
+# -----------------------
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     try:
         data = request.get_json()
         if not data:
-            return "No data", 400
+            return "OK", 200
 
         value = data["entry"][0]["changes"][0]["value"]
-
         if "messages" not in value:
             return "OK", 200
 
         message = value["messages"][0]
         user = message["from"]
-        text = message.get("text", {}).get("body", "").lower()
+        text = message.get("text", {}).get("body", "").lower().strip()
 
-        # 👤 controllo cliente
         cliente = cerca_cliente(user)
 
+        # -----------------------
+        # PRIMO ACCESSO
+        # -----------------------
+
         if user not in sessions:
-            sessions[user] = {"step": "start"}
+            sessions[user] = {"step": "menu"}
 
             if cliente:
+                sessions[user]["cliente"] = cliente
+
                 send_message(
                     user,
-                    f"👋 Bentornato {cliente['nome']}!\n\n"
-                    "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
-                    "🧾 Scrivi ORDINE per effettuare un ordine\n\n"
-                    "Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!."
+                    f"""👋 Bentornato {cliente['nome']}!
+
+Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.
+Le richieste vengono prese in carico dal nostro staff entro pochi minuti.
+
+📦 Scrivi CATALOGO per visualizzare i nostri prodotti
+🧾 Scrivi ORDINE per effettuare un ordine
+☎️ Scrivi AIUTO per contattare un operatore
+
+Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!"""
                 )
-                sessions[user]["step"] = "menu"
 
             else:
                 send_message(
                     user,
                     "👋 Benvenuto in Cortonese Carni Srl!\n\n"
-                    "Da qui puoi effettuare i tuoi ordini direttamente online in modo semplice e veloce.\n"
-                    "Le richieste vengono prese in carico dal nostro staff entro pochi minuti.\n"
-                    "📦 Scrivi CATALOGO per visualizzare i nostri prodotti\n"
-                    "🧾 Scrivi ORDINE per effettuare un ordine\n\n"
-                    "Per qualsiasi necessità, il nostro team è sempre a vostra disposizione!."
+                    "📦 Scrivi CATALOGO\n"
+                    "🧾 Scrivi ORDINE\n"
+                    "☎️ Scrivi AIUTO"
                 )
-                sessions[user]["step"] = "menu"
-
 
         step = sessions[user]["step"]
 
-        # 📦 CATALOGO
-        if text == "catalogo":
+        # -----------------------
+        # AIUTO
+        # -----------------------
+
+        if text in ["aiuto", "help", "operatore", "assistenza"]:
             send_message(
                 user,
-                "📦 Ecco il nostro catalogo completo:\n\nhttps://drive.google.com/file/d/1wqqPoIYDuPtxxNvFeZJFk8FzmvM7WiQm/view?usp=sharing"
+                "☎️ Contatta il nostro staff\n\n"
+                "📞 0575 XXXXXXX\n"
+                "📱 333 XXXXXXX\n\n"
+                "🕒 Lun-Ven 08:00 - 13:00 / 14:00 - 18:00"
             )
             return "OK", 200
 
-        # 🧾 ORDINE
-        if text == "ordine":
-            send_message(user, "Perfetto 👍\n\nPer iniziare il tuo ordine, inserisci\nNome e Cognome:")
-            sessions[user]["step"] = "nome"
+        # -----------------------
+        # CATALOGO
+        # -----------------------
+
+        if text == "catalogo":
+            send_message(
+                user,
+                "📦 Ecco il nostro catalogo completo:\n\n"
+                "https://drive.google.com/file/d/1wqqPoIYDuPtxxNvFeZJFk8FzmvM7WiQm/view?usp=sharing"
+            )
             return "OK", 200
 
-        # 🧾 NOME
+        # -----------------------
+        # ORDINE + LOGICA NUOVA
+        # -----------------------
+
+        if text == "ordine":
+
+            if cliente:
+                sessions[user]["step"] = "confirm_data"
+                sessions[user]["cliente"] = cliente
+
+                send_message(
+                    user,
+                    f"""👋 Bentornato {cliente['nome']}!
+
+Questi sono i tuoi dati:
+
+🏢 Tipo: {cliente['tipo']}
+📧 Email: {cliente['email']}
+📍 Indirizzo: {cliente['indirizzo']}
+
+Vuoi riutilizzare questi dati?
+
+✔ Scrivi SI
+❌ Scrivi NO"""
+                )
+
+            else:
+                send_message(
+                    user,
+                    "Perfetto 👍\n\nPer iniziare il tuo ordine, inserisci\nNome e Cognome:"
+                )
+                sessions[user]["step"] = "nome"
+
+            return "OK", 200
+
+        # -----------------------
+        # CONFERMA DATI
+        # -----------------------
+
+        if step == "confirm_data":
+
+            if text == "si":
+                send_message(
+                    user,
+                    "Perfetto 👍\n\nScrivi cosa vuoi ordinare:"
+                )
+                sessions[user]["step"] = "ordine"
+                return "OK", 200
+
+            if text == "no":
+                send_message(
+                    user,
+                    "Ok 👍\nScrivi la tua email:"
+                )
+                sessions[user]["step"] = "email_update"
+                return "OK", 200
+
+        # -----------------------
+        # UPDATE EMAIL / INDIRIZZO
+        # -----------------------
+
+        if step == "email_update":
+            sessions[user]["email"] = text
+            send_message(user, "Perfetto 👍 ora scrivi il tuo indirizzo:")
+            sessions[user]["step"] = "indirizzo_update"
+            return "OK", 200
+
+        if step == "indirizzo_update":
+            sessions[user]["indirizzo"] = text
+            send_message(user, "Perfetto 👍 ora scrivi cosa vuoi ordinare:")
+            sessions[user]["step"] = "ordine"
+            return "OK", 200
+
+        # -----------------------
+        # FLUSSO ORDINE
+        # -----------------------
+
         if step == "nome":
             sessions[user]["nome"] = text
             send_message(user, "Ordini da parte di un' azienda o un privato?\n\n(scrivere il nome dell'azienda)")
             sessions[user]["step"] = "tipo"
             return "OK", 200
 
-        # 🧾 TIPO
         if step == "tipo":
             sessions[user]["tipo"] = text
             send_message(user, "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata\n (in un solo messaggio):")
             sessions[user]["step"] = "ordine"
             return "OK", 200
 
-        # 🧾 ORDINE
         if step == "ordine":
             sessions[user]["ordine"] = text
             send_message(user, "Scrivi la data in cui vorresti ricevere il tuo ordine")
             sessions[user]["step"] = "data"
             return "OK", 200
 
-        # 📅 DATA
         if step == "data":
             sessions[user]["data"] = text
             send_message(user, "Scrivi il tuo indirizzo email:")
             sessions[user]["step"] = "email"
             return "OK", 200
 
-        # 📧 EMAIL
         if step == "email":
             sessions[user]["email"] = text
             send_message(user, "Scrivi il tuo indirizzo di consegna:")
             sessions[user]["step"] = "indirizzo"
             return "OK", 200
 
-        # 📦 FINALE
-        if step == "indirizzo":
-            sessions[user]["indirizzo"] = text
+        # -----------------------
+        # FINALE
+        # -----------------------
 
-            print("📦 ORDINE COMPLETO")
+        if step == "indirizzo":
+
+            sessions[user]["indirizzo"] = text
 
             Thread(target=send_email, args=(
                 user,
@@ -258,7 +338,6 @@ def webhook():
                 sessions[user]["indirizzo"]
             )).start()
 
-            # 💾 salva cliente su supabase
             salva_cliente(
                 user,
                 sessions[user]["nome"],
@@ -267,9 +346,13 @@ def webhook():
                 sessions[user]["indirizzo"]
             )
 
-            send_message(user, "✅ Ordine ricevuto!\n\nUn nostro operatore prenderà in carico la richiesta a breve.\n\nGrazie per aver scelto Cortonese Carni!")
+            send_message(
+                user,
+                "✅ Ordine ricevuto!\n\nUn nostro operatore prenderà in carico la richiesta a breve.\n\nGrazie per aver scelto Cortonese Carni!"
+            )
 
-            sessions[user] = {"step": "start"}
+            sessions[user] = {"step": "menu"}
+
             return "OK", 200
 
         return "OK", 200
@@ -279,7 +362,10 @@ def webhook():
         return "OK", 200
 
 
-# 🚀 RUN
+# -----------------------
+# RUN
+# -----------------------
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
