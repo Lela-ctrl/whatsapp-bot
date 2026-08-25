@@ -1,4 +1,3 @@
-```python
 from flask import Flask, request
 import requests
 import os
@@ -33,7 +32,7 @@ info_orari = ["orari", "apertura", "quando siete aperti"]
 info_aiuto = ["aiuto", "help", "operatore", "assistenza"]
 
 # 📦 CATALOGO
-info_catalogo = ["catalogo", "catalog", "pdf catalogo"]
+info_catalogo = ["catalogo"]
 
 riordino = ["voglio riordinare", "riordina", "ordine di nuovo", "ciao voglio riordinare"]
 
@@ -329,7 +328,7 @@ def webhook():
                     sessions[user]["tipo"],
                     sessions[user]["ordine"],
                     sessions[user]["data"],
-                    EMAIL_TO,   # 📩 sempre azienda
+                    EMAIL_TO,
                     ""
                 )
             ).start()
@@ -364,4 +363,3 @@ def webhook():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-```
