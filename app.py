@@ -1,3 +1,4 @@
+```python
 from flask import Flask, request
 import requests
 import os
@@ -31,7 +32,11 @@ info_dove_siamo = ["dove siamo", "dove siete", "posizione"]
 info_orari = ["orari", "apertura", "quando siete aperti"]
 info_aiuto = ["aiuto", "help", "operatore", "assistenza"]
 
+# 📦 CATALOGO
+info_catalogo = ["catalogo", "catalog", "pdf catalogo"]
+
 riordino = ["voglio riordinare", "riordina", "ordine di nuovo", "ciao voglio riordinare"]
+
 
 def cerca_cliente(telefono):
     try:
@@ -183,19 +188,38 @@ def webhook():
             return "OK", 200
 
         # -----------------------
+        # 📦 CATALOGO
+        # -----------------------
+
+        if text in info_catalogo:
+            send_message(
+                user,
+                "📦 Ecco il nostro catalogo:\n\n"
+                "https://drive.google.com/file/d/16Dyd16S6uEnFcLxSAHUFrP1EKPofjyi3/view"
+            )
+            return "OK", 200
+
+        # -----------------------
         # INFO
         # -----------------------
 
         if text in info_dove_siamo:
-            send_message(user, "📍 ecco! ci troviamo proprio qui:\n https://maps.app.goo.gl/zexK43XE7fKiMxwe7")
+            send_message(
+                user,
+                "📍 ecco! ci troviamo proprio qui:\n https://maps.app.goo.gl/zexK43XE7fKiMxwe7"
+            )
             return "OK", 200
 
         if text in info_orari:
-            send_message(user, "🕒 Siamo a vostra disposizione dal Lunedì al Venerdì con orari:\n 8:00-13:00 e 14:00-18:00")
+            send_message(
+                user,
+                "🕒 Siamo a vostra disposizione dal Lunedì al Venerdì con orari:\n 8:00-13:00 e 14:00-18:00"
+            )
             return "OK", 200
 
         if text in info_aiuto:
-            send_message(user,
+            send_message(
+                user,
                 "☎️ Contatta il nostro staff\n\n"
                 "📞 Manuele +39 328 931 8272\n"
                 "📱 Andrea +39 338 481 6433\n"
@@ -271,13 +295,19 @@ def webhook():
 
         if step == "nome":
             sessions[user]["nome"] = text
-            send_message(user, "Ordini da parte di un' azienda o un privato?\n\n(scrivere il nome dell'azienda)")
+            send_message(
+                user,
+                "Ordini da parte di un' azienda o un privato?\n\n(scrivere il nome dell'azienda)"
+            )
             sessions[user]["step"] = "tipo"
             return "OK", 200
 
         if step == "tipo":
             sessions[user]["tipo"] = text
-            send_message(user, "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata\n (in un solo messaggio):")
+            send_message(
+                user,
+                "Per favore scrivi cosa vuoi ordinare specificando il nome del prodotto e la quantità desiderata\n (in un solo messaggio):"
+            )
             sessions[user]["step"] = "ordine"
             return "OK", 200
 
@@ -291,15 +321,18 @@ def webhook():
 
             sessions[user]["data"] = text
 
-            Thread(target=send_email, args=(
-                user,
-                sessions[user]["nome"],
-                sessions[user]["tipo"],
-                sessions[user]["ordine"],
-                sessions[user]["data"],
-                EMAIL_TO,   # 📩 sempre azienda
-                ""
-            )).start()
+            Thread(
+                target=send_email,
+                args=(
+                    user,
+                    sessions[user]["nome"],
+                    sessions[user]["tipo"],
+                    sessions[user]["ordine"],
+                    sessions[user]["data"],
+                    EMAIL_TO,   # 📩 sempre azienda
+                    ""
+                )
+            ).start()
 
             salva_cliente(
                 user,
@@ -331,3 +364,4 @@ def webhook():
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+```
